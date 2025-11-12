@@ -3,7 +3,6 @@ package request
 import "time"
 
 type EventRequestDto struct {
-	ID                 uint      `gorm:"primaryKey;autoIncrement" json:"id_event"`
 	Title              string    `json:"event_title"`
 	Category           string    `json:"event_category"`
 	Location           string    `json:"event_location"`

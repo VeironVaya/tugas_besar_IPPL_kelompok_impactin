@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"backend/internal/app/models"
+	"backend/internal/app/dtos/request"
 	"backend/internal/app/services"
 	"net/http"
 
@@ -17,7 +17,7 @@ func NewEventController(service *services.EventService) *EventController {
 }
 
 func (c *EventController) PostEvent(ctx *gin.Context) {
-	var event models.Event
+	var event request.EventRequestDto
 	if err := ctx.ShouldBindJSON(&event); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -35,5 +35,5 @@ func (c *EventController) GetEvents(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": events})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Data Retrieve Succes", "data": events})
 }
