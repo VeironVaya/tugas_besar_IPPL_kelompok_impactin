@@ -20,4 +20,23 @@ type Event struct {
 	MinAge             int       `json:"event_min_age"`
 	MaxAge             int       `json:"event_max_age"`
 	GroupLink          string    `json:"event_group_link"`
+	ListOfParticipant  []Participant
+	ListOfCommittee    []Committee
+}
+
+type Committee struct {
+	Id      uint   `gorm:"primaryKey;autoIncrement" json:"id_committee"`
+	Name    string `json:"committee_name"`
+	Role    string `json:"committee_role"`
+	Email   string `json:"committee_email"`
+	Phone   string `json:"committee_phone"`
+	EventId uint   `json:"event_id"`
+}
+
+type Participant struct {
+	Id      uint   `gorm:"primaryKey;autoIncrement" json:"id_participant"`
+	Name    string `json:"participant_name"`
+	Email   string `json:"participant_email"`
+	Phone   string `json:"participant_phone"`
+	EventId uint   `json:"event_id"`
 }
