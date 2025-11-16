@@ -50,6 +50,15 @@ const EventDetailPage = () => {
       <Header />
       <main className="min-h-screen bg-gray-50 pb-20">
         {" "}
+        {/* Tombol Back */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          <button
+            onClick={() => window.history.back()}
+            className="text-green-700 hover:text-green-800 transition"
+          >
+            <span className="text-3xl">←</span>
+          </button>
+        </div>
         {/* Latar belakang terang, mirip homepage */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           {/* Card Utama Event Detail */}
