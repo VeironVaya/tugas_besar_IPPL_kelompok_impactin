@@ -17,7 +17,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white text-gray-800 shadow-sm sticky top-0 z-50">
+    <header className="bg-[#225740] text-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
         <Link to="/home" className="flex items-center">
           <img
@@ -45,7 +45,7 @@ const Header = () => {
               `hover:text-green-600 transition ${
                 isActive
                   ? "underline underline-offset-4 text-green-700"
-                  : "text-gray-800"
+                  : "text-white"
               }`
             }
           >
@@ -58,7 +58,7 @@ const Header = () => {
               `hover:text-green-600 transition ${
                 isActive
                   ? "underline underline-offset-4 text-green-700"
-                  : "text-gray-800"
+                  : "text-white"
               }`
             }
           >
@@ -68,7 +68,7 @@ const Header = () => {
           {/* ✅ Profile Logic */}
           <button
             onClick={handleProfileClick}
-            className="hover:text-green-600 transition text-gray-800"
+            className="hover:text-green-600 transition text-white"
           >
             {user ? user.username : "Login"}
           </button>

@@ -4,6 +4,7 @@ import Footer from "../../components/footer.jsx";
 import EventCard from "../../components/event_card.jsx";
 import HERO_IMAGE from "../../assets/hero news.png";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
+import { MapPin, Calendar, Users } from "lucide-react"; // Import ikon dari lucide/react
 
 // dummy data acara
 const mockEvents = [
@@ -45,7 +46,7 @@ const mockEvents = [
   },
 ];
 
-const topEvents = Array(8)
+const topEvents = Array(10)
   .fill(0)
   .map((_, i) => mockEvents[i % mockEvents.length]);
 const peduliLautEvents = Array(4)
@@ -57,7 +58,8 @@ const HomePage = () => {
     <>
       <Header />
 
-      <main className="bg-white min-h-screen">
+      {/* Terapkan Gradasi Hutan Halus pada Latar Belakang Main */}
+      <main className="min-h-screen bg-gradient-to-br from-[#C0E0F0] via-[#D6F4D6] to-[#B3D3B3]">
         {/* Hero Banner */}
         <section
           className="relative h-[80vh] w-full flex items-center bg-cover bg-center"
@@ -66,18 +68,20 @@ const HomePage = () => {
           {/* Overlay */}
           <div className="absolute inset-0 bg-black/40"></div>
 
-          {/* Container teks kiri */}
+          {/* Container teks kiri. max-w-6xl mx-auto tetap di tengah, tapi isinya kita paksa rata kiri. */}
           <div className="relative z-10 max-w-6xl mx-auto w-full px-6 lg:px-16">
-            <div className="max-w-xl">
-              <h1 className="font-inter text-6xl md:text-6xl font-extrabold text-white leading-tight drop-shadow-lg">
+            {/* Tambahkan text-left ke div ini untuk memastikan semua konten di dalamnya rata kiri */}
+            {/* Hapus max-w-xl agar teks bisa menggunakan lebar yang lebih luas (jika diperlukan) */}
+            <div className="text-left">
+              <h1 className="font-inter text-6xl md:text-6xl font-extrabold text-white leading-tight drop-shadow-lg text-left">
                 DeepBlue Movement
               </h1>
 
-              <p className="font-inter text-lg md:text-2xl font-light text-white/90 mt-3 mb-8">
+              <p className="font-inter text-lg md:text-2xl font-light text-white/90 mt-3 mb-8 text-left">
                 Protect the Depths, Preserve the Future
               </p>
 
-              <button className="bg-gradient-to-r from-green-600 to-blue-600 px-8 py-3 rounded-full text-sm md:text-base font-semibold text-white shadow-xl hover:scale-105 transition-transform">
+              <button className="bg-gradient-to-r from-green-700 to-blue-500 px-8 py-3 rounded-full text-sm md:text-base font-semibold text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-transform">
                 Explore Event
               </button>
             </div>
@@ -85,30 +89,39 @@ const HomePage = () => {
         </section>
 
         {/* Top Event Section */}
-        <section className="w-full bg-white py-12">
-          <div className="max-w-7xl mx-auto px-6 lg:px-12">
-            <h2 className="text-gray-900 text-3xl font-bold flex items-center gap-2 mb-8">
-              <span className="text-gray-900 text-xl">↑</span> Top Event
+        <section className="w-full py-16">
+          {/* SAMAKAN padding horizontal (lg:px-16) agar sejajar dengan Hero */}
+          <div className="max-w-7xl mx-auto px-6 lg:px-16">
+            <h2 className="text-gray-900 text-3xl font-extrabold mb-10 border-b-2 border-green-500 pb-2 inline-block">
+              Top Event
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-              {topEvents.map((event) => (
-                <EventCard key={event.id} {...event} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
+              {topEvents.map((event, index) => (
+                <EventCard key={index} {...event} />
               ))}
             </div>
           </div>
         </section>
 
-        {/* Peduli Laut */}
-        <section className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
-          <h2 className="text-2xl font-bold mb-8 flex items-center gap-2 text-gray-900">
-            <span className="text-green-700">🌊</span> Peduli Laut
+        {/* Peduli Laut Section */}
+        <section className="max-w-7xl mx-auto px-6 lg:px-16 py-16">
+          {/* SAMAKAN padding horizontal (lg:px-16) agar sejajar dengan Hero */}
+          <h2 className="text-3xl font-extrabold mb-10 flex items-center gap-3 text-gray-900 border-b-2 border-blue-500 pb-2 inline-block">
+            <span className="text-blue-600">🌊</span> Peduli Laut
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-            {peduliLautEvents.map((event) => (
-              <EventCard key={event.id} {...event} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
+            {peduliLautEvents.map((event, index) => (
+              <EventCard key={index} {...event} />
             ))}
+          </div>
+
+          {/* Tombol Lihat Semua: Ubah text-center menjadi text-left agar tombol ikut minggir ke kiri */}
+          <div className="text-left mt-12">
+            <button className="bg-gradient-to-r from-blue-600 to-teal-400 px-10 py-3 rounded-lg text-lg font-semibold text-white shadow-lg hover:scale-105 transition-transform">
+              Lihat Semua Event Laut
+            </button>
           </div>
         </section>
       </main>
