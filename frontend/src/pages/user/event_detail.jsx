@@ -1,38 +1,35 @@
-import React from "react";
-import { useParams } from "react-router-dom"; // Untuk mengambil slug dari URL
-import Header from "../../components/navbar.jsx"; // Adjust path if needed
-import Footer from "../../components/footer.jsx"; // Adjust path if needed
+import { useParams } from "react-router-dom";
+import Header from "../../components/navbar.jsx";
+import Footer from "../../components/footer.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
+import React, { useState } from "react";
 
-// Ikon dari lucide-react
+// Icons
 import { MapPin, Calendar, Clock, Users, TriangleAlert } from "lucide-react";
 
-// --- DUMMY DATA UNTUK HALAMAN DETAIL ---
-// Anda akan mengganti ini dengan data yang diambil dari API berdasarkan 'slug'
+// Dummy data
 const dummyEventDetails = {
   id: 1,
   title: "DeepBlue Movement",
   organizer: "Sea Care Indonesia",
   location: "Yogyakarta, Indonesia",
-  fullLocation: "The Legend of Blue Sea",
   dateRange: "18-23 September 2025",
   time: "09.00-14.00 WIB",
   ageGroup: "All Age",
-  imageUrl: MOCK_CARD_IMAGE, // Ganti dengan gambar Hero Detail yang relevan
-  description: `The DeepBlue Movement is a collective call to action aimed at maintaining the health and sustainability of Indonesia's marine ecosystems. This event invites all volunteers, divers, communities, and concerned individuals to get directly involved in conservation efforts across our coastal and aquatic areas. Ranging from the cleanup of non-organic waste on beaches and mangrove areas, to public education about the dangers of microplastics to marine life. join this movement, donate your time and energy, and become part of the solution to ensure our oceans remain blue, abundant, and sustainable for future generations.`,
-  termsAndConditions: "T & C applies. Read more here.",
+  imageUrl: MOCK_CARD_IMAGE,
+  description: `The DeepBlue Movement is a collective call to action aimed at maintaining the health and sustainability of Indonesia's marine ecosystems. This event invites all volunteers, divers, communities, and concerned individuals to get directly involved in conservation efforts across our coastal and aquatic areas.`,
+  termsAndConditions: `T & C applies. Read more here.`,
 };
-// --- END DUMMY DATA ---
 
 const EventDetailPage = () => {
-  const { slug } = useParams(); // Ambil slug dari URL
+  const { slug } = useParams();
+  const [showTerms, setShowTerms] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportText, setReportText] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Untuk saat ini, kita akan menggunakan dummy data.
-  // Di aplikasi nyata, Anda akan melakukan fetch data berdasarkan 'slug' ini.
   const event = dummyEventDetails;
-  // Jika Anda memiliki banyak event di dummyEventDetails, Anda bisa mencari berdasarkan slug:
-  // const event = someArrayOfEvents.find(e => e.slug === slug);
-  // Untuk tujuan demo ini, kita hanya menggunakan satu dummy event.
 
   if (!event) {
     return (
@@ -48,45 +45,44 @@ const EventDetailPage = () => {
   return (
     <>
       <Header />
+
       <main className="min-h-screen bg-gray-50 pb-20">
-        {" "}
-        {/* Tombol Back */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-          <button
-            onClick={() => window.history.back()}
-            className="text-green-700 hover:text-green-800 transition"
-          >
-            <span className="text-3xl">←</span>
-          </button>
-        </div>
-        {/* Latar belakang terang, mirip homepage */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          {/* Card Utama Event Detail */}
+        {/* Event Detail Container */}
+        <div className="max-w-6xl mx-auto px-4 py-10">
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-            {/* Bagian Atas: Gambar & Info Singkat */}
+            {/* TOP: Image + Info */}
             <div className="md:flex">
-              <div className="md:flex-shrink-0 w-full md:w-1/2">
+              {/* Image */}
+              <div className="md:w-1/2">
                 <img
                   className="h-full w-full object-cover"
                   src={event.imageUrl}
                   alt={event.title}
                 />
               </div>
-              <div className="p-6 md:p-8 flex-1 relative">
-                <h1 className="mt-9 text-4xl font-extrabold text-gray-900 mb-2 leading-tight">
-                  {event.title}
-                </h1>
-                <p className="text-lg text-gray-600 font-medium mb-6">
-                  {event.organizer}
-                </p>
 
-                {/* Badge Report Event */}
-                <span className="absolute top-6 right-6 flex items-center gap-1 text-sm text-red-600 font-semibold bg-red-50 px-3 py-1 rounded-full">
+              {/* Info */}
+              <div className="p-8 flex-1 relative">
+                {/* Report Badge */}
+                <span
+                  onClick={() => setShowReport(true)}
+                  className="absolute top-6 right-6 flex items-center gap-1 text-sm text-red-600 font-semibold bg-red-50 px-3 py-1 rounded-full cursor-pointer hover:bg-red-100 transition"
+                >
                   <TriangleAlert className="w-4 h-4" /> Report Event
                 </span>
 
-                {/* Detail Ikon */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 text-gray-700 text-base mb-8">
+                {/* Title */}
+                <h1 className="text-4xl font-extrabold text-gray-900 leading-tight">
+                  {event.title}
+                </h1>
+
+                {/* Organizer */}
+                <p className="text-lg text-gray-600 font-medium mt-2 mb-8">
+                  {event.organizer}
+                </p>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-gray-700 text-base">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-green-700" />
                     <span>
@@ -96,14 +92,17 @@ const EventDetailPage = () => {
                       </span>
                     </span>
                   </div>
+
                   <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-green-700" />
                     <span>{event.dateRange}</span>
                   </div>
+
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-green-700" />
                     <span>{event.time}</span>
                   </div>
+
                   <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-green-700" />
                     <span>
@@ -113,32 +112,117 @@ const EventDetailPage = () => {
                   </div>
                 </div>
 
-                {/* Tombol Terms and Conditions */}
-                <button className="text-sm font-semibold text-gray-700 hover:text-green-700 transition">
-                  terms and conditions
+                {/* Terms & Conditions Button */}
+                <button
+                  onClick={() => setShowTerms(true)}
+                  className="mt-8 inline-block px-4 py-2 text-sm font-semibold text-green-700 border border-green-300 rounded-lg hover:bg-green-50 transition"
+                >
+                  Terms & Conditions
                 </button>
               </div>
             </div>
 
-            {/* Bagian Deskripsi */}
-            <div className="p-6 md:p-8 border-t border-gray-100 mt-6">
+            {/* Description Section */}
+            <div className="p-8 border-t border-gray-100">
               <h2 className="text-2xl font-extrabold text-gray-900 mb-4">
                 Description
               </h2>
-              <p className="text-gray-700 leading-relaxed text-base">
+              <p className="text-gray-700 leading-relaxed">
                 {event.description}
               </p>
             </div>
 
-            {/* Tombol Join Event */}
-            <div className="p-6 md:p-8 border-t border-gray-100 flex justify-end">
-              <button className="bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition duration-300">
+            {/* Join Event Button */}
+            <div className="p-8 border-t border-gray-100 flex justify-end">
+              <button className="bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-10 rounded-lg shadow-md hover:shadow-lg transition duration-300">
                 JOIN EVENT
               </button>
             </div>
           </div>
         </div>
+        {/* TERMS MODAL */}
+        {showTerms && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl max-w-xl w-full shadow-xl">
+              <h2 className="text-2xl font-bold mb-4">Terms & Conditions</h2>
+              <p className="text-gray-700 whitespace-pre-line">
+                {event.termsAndConditions}
+              </p>
+              <button
+                onClick={() => setShowTerms(false)}
+                className="mt-6 px-6 py-2 rounded-lg bg-green-600 text-white font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+        {showReport && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-3xl border-4 border-green-900 px-8 py-6 relative">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowReport(false)}
+                className="absolute top-3 right-4 text-gray-500 hover:text-black text-2xl"
+              >
+                ×
+              </button>
+
+              <h2 className="text-3xl font-bold mb-3">Report Event</h2>
+              <p className="text-gray-700 mb-4">
+                Tell us your reason for reporting this event
+              </p>
+
+              {/* Textarea */}
+              <textarea
+                value={reportText}
+                onChange={(e) => {
+                  setReportText(e.target.value);
+                  setErrorMsg(""); // clear error when typing
+                }}
+                placeholder="Eg: false information, wrong details, inappropriate content..."
+                className="w-full h-64 border border-gray-400 rounded-lg p-3 text-gray-800 focus:ring-2 focus:ring-green-700 outline-none"
+              />
+
+              {/* Error message RIGHT under textarea */}
+              {errorMsg && (
+                <p className="text-red-600 text-sm mt-2">{errorMsg}</p>
+              )}
+
+              {/* Submit Button */}
+              <div className="flex justify-end mt-5">
+                <button
+                  onClick={() => {
+                    if (!reportText.trim()) {
+                      setErrorMsg("Please fill your report.");
+                      return;
+                    }
+
+                    setErrorMsg("");
+                    console.log("Report submitted:", reportText);
+
+                    setShowReport(false);
+                    setReportText("");
+                    setShowSuccess(true);
+
+                    // Auto hide notification
+                    setTimeout(() => setShowSuccess(false), 3000);
+                  }}
+                  className="bg-green-800 text-white px-8 py-2 rounded-lg font-semibold hover:bg-green-900 transition"
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showSuccess && (
+          <div className="fixed top-5 left-1/2 -translate-x-1/2 bg-green-700 text-white px-6 py-3 rounded-xl shadow-lg z-50">
+            Thank you for your reporting!
+          </div>
+        )}
       </main>
+
       <Footer />
     </>
   );
