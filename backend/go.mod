@@ -1,9 +1,13 @@
 module backend
 
-go 1.20
+go 1.21
+
+toolchain go1.22.5
 
 require (
 	github.com/gin-gonic/gin v1.9.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
+	golang.org/x/crypto v0.5.0
 	gorm.io/driver/mysql v1.4.6
 	gorm.io/gorm v1.26.0
 )
@@ -29,7 +33,6 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.20.0 // indirect

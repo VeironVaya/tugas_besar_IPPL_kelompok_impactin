@@ -16,14 +16,33 @@ func main() {
 	// Initialize DB
 	db := config.InitDB()
 
-	// Setup repository, service, controller
-	repo := repositories.NewEventRepository(db)
-	svc := services.NewEventService(repo)
-	ctrl := controllers.NewEventController(svc)
+	// === Event wiring ===
+	eventRepo := repositories.NewEventRepository(db)
+	eventSvc := services.NewEventService(eventRepo)
+	eventCtrl := controllers.NewEventController(eventSvc)
+
+	// === User & Profile wiring ===
+	userRepo := repositories.NewUserRepository(db)
+	profileRepo := repositories.NewProfileRepository(db)
+	userSvc := services.NewUserService(userRepo, profileRepo)
+	userCtrl := controllers.NewUserController(userSvc)
+	profileSvc := services.NewProfileService(profileRepo, userRepo)
+	profileCtrl := controllers.NewProfileController(profileSvc)
+
+	// === Skill Wiring ===
+	skillRepo := repositories.NewSkillRepository(db)
+	skillSvc := services.NewSkillService(skillRepo)
+	skillCtrl := controllers.NewSkillController(skillSvc)
 
 	// Setup Gin router and routes
 	r := gin.Default()
-	routes.SetupRoutes(r, ctrl)
+	routes.SetupAllRoutes(
+		r,
+		eventCtrl,
+		userCtrl,
+		skillCtrl,
+		profileCtrl,
+	)
 
 	// Start server
 	if err := r.Run(":8080"); err != nil {

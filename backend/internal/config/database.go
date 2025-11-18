@@ -26,10 +26,21 @@ func InitDB() *gorm.DB {
 		log.Fatal("❌ Failed to connect to database: ", err)
 	}
 
-	// Auto migrate tables
-	err = db.AutoMigrate(&models.Event{})
-	if err != nil {
-		log.Fatal("❌ Failed to migrate database: ", err)
+	// --- Safe AutoMigrate ---
+	tables := []interface{}{
+		&models.Event{},
+		&models.User{},
+		&models.Skill{},
+		&models.Profile{},
+	}
+
+	for _, table := range tables {
+		if !db.Migrator().HasTable(table) {
+			err := db.AutoMigrate(table)
+			if err != nil {
+				log.Fatalf("❌ Failed to migrate table %T: %v", table, err)
+			}
+		}
 	}
 
 	log.Println("✅ MySQL Connected Successfully")
