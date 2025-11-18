@@ -7,6 +7,7 @@ import LoginPage from "../pages/user/login";
 import RegisterPage from "../pages/user/register";
 import EventDetailPage from "../pages/user/event_detail";
 
+
 // Import hook untuk mendapatkan parameter URL (opsional, tapi sering digunakan di halaman detail)
 import { useParams } from "react-router-dom";
 

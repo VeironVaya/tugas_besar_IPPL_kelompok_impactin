@@ -73,7 +73,7 @@ const EventCard = ({
           <span>{organizer}</span>
         </div>
       </div>
-    </Link> // <-- Penutup Link
+    </Link> 
   );
 };
 
