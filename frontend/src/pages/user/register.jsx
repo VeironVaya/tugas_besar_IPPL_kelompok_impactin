@@ -1,15 +1,42 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Mail, User, Lock } from "lucide-react";
 import LOGO from "../../assets/impactin_logo.png";
 import BGLOGIN from "../../assets/bg login.png";
+import { useAuth } from "../../context/AuthContext"; // ⬅ TAMBAH INI
 
 const RegisterPage = () => {
+  const navigate = useNavigate();
+  const { setUser } = useAuth(); // ⬅ TAMBAH INI
+
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+
+    if (password !== confirmPass) {
+      alert("Password tidak sama!");
+      return;
+    }
+
+    // ⬅ SIMPAN di localStorage
+    localStorage.setItem("username", username);
+
+    // ⬅ UPDATE AuthContext agar navbar langsung berubah
+    setUser({ username });
+
+    alert("Register berhasil! 😄");
+
+    navigate("/home");
+  };
+
   return (
     <div
       className="min-h-screen w-full bg-cover bg-center flex items-center justify-between px-16 relative"
-      style={{
-        backgroundImage: `url(${BGLOGIN})`,
-      }}
+      style={{ backgroundImage: `url(${BGLOGIN})` }}
     >
       <div className="absolute inset-0 bg-black/30"></div>
 
@@ -25,11 +52,12 @@ const RegisterPage = () => {
         <div className="w-full flex justify-center mb-2">
           <img src={LOGO} alt="logo" className="w-40" />
         </div>
+
         <p className="text-gray-200 text-sm text-center mb-8">
           Please fill in the form to create an account
         </p>
 
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleRegister}>
           <div className="flex items-center bg-white/20 rounded-full px-4 py-3">
             <Mail className="text-gray-200 w-5 h-5 mr-3" />
             <input
@@ -37,6 +65,8 @@ const RegisterPage = () => {
               placeholder="Email"
               required
               className="bg-transparent w-full text-gray-100 focus:outline-none text-sm"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
@@ -47,6 +77,8 @@ const RegisterPage = () => {
               placeholder="Username"
               required
               className="bg-transparent w-full text-gray-100 focus:outline-none text-sm"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
           </div>
 
@@ -57,6 +89,8 @@ const RegisterPage = () => {
               placeholder="Password"
               required
               className="bg-transparent w-full text-gray-100 focus:outline-none text-sm"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
@@ -67,6 +101,8 @@ const RegisterPage = () => {
               placeholder="Confirm Password"
               required
               className="bg-transparent w-full text-gray-100 focus:outline-none text-sm"
+              value={confirmPass}
+              onChange={(e) => setConfirmPass(e.target.value)}
             />
           </div>
 
@@ -76,8 +112,6 @@ const RegisterPage = () => {
         </form>
 
         <p className="text-gray-200 text-sm mt-5 text-center">
-          {" "}
-          {/* ✅ fixed */}
           Already have an account?{" "}
           <Link
             to="/login"
