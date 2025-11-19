@@ -3,11 +3,8 @@ import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
 import React, { useState } from "react";
-
-// Icons
 import { MapPin, Calendar, Clock, Users, TriangleAlert } from "lucide-react";
 
-// Dummy data
 const dummyEventDetails = {
   id: 1,
   title: "DeepBlue Movement",
@@ -28,6 +25,9 @@ const EventDetailPage = () => {
   const [reportText, setReportText] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showJoinConfirm, setShowJoinConfirm] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [joined, setJoined] = useState(false);
 
   const event = dummyEventDetails;
 
@@ -134,8 +134,18 @@ const EventDetailPage = () => {
 
             {/* Join Event Button */}
             <div className="p-8 border-t border-gray-100 flex justify-end">
-              <button className="bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-10 rounded-lg shadow-md hover:shadow-lg transition duration-300">
-                JOIN EVENT
+              <button
+                onClick={() => setShowJoinConfirm(true)}
+                disabled={joined}
+                className={`py-3 px-10 rounded-lg font-bold shadow-md transition duration-300
+    ${
+      joined
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-green-700 hover:bg-green-800 text-white"
+    }
+  `}
+              >
+                {joined ? "WAITING FOR APPROVAL" : "JOIN EVENT"}
               </button>
             </div>
           </div>
@@ -219,6 +229,74 @@ const EventDetailPage = () => {
         {showSuccess && (
           <div className="fixed top-5 left-1/2 -translate-x-1/2 bg-green-700 text-white px-6 py-3 rounded-xl shadow-lg z-50">
             Thank you for your reporting!
+          </div>
+        )}
+
+        {/* JOIN CONFIRMATION MODAL */}
+        {showJoinConfirm && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-xl px-8 py-6 relative">
+              {/* Close */}
+              <button
+                onClick={() => {
+                  setShowJoinConfirm(false);
+                  setAgreed(false);
+                }}
+                className="absolute top-3 right-4 text-gray-500 hover:text-black text-2xl"
+              >
+                ×
+              </button>
+
+              <h2 className="text-2xl font-bold mb-3">Before You Join</h2>
+              <p className="text-gray-700 mb-4">
+                Please read the recruitment details and terms & conditions
+                before joining this event.
+              </p>
+
+              {/* Checkbox */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={() => setAgreed(!agreed)}
+                  className="w-4 h-4"
+                />
+                <span className="text-gray-800 text-sm">
+                  I have read and agree to all event terms & conditions.
+                </span>
+              </label>
+
+              {/* Buttons */}
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowJoinConfirm(false);
+                    setAgreed(false);
+                  }}
+                  className="px-6 py-2 rounded-lg border border-gray-400 text-gray-700 font-semibold hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  disabled={!agreed}
+                  onClick={() => {
+                    setShowJoinConfirm(false);
+                    setJoined(true);
+                    setAgreed(false);
+                  }}
+                  className={`px-6 py-2 rounded-lg font-semibold text-white transition
+            ${
+              agreed
+                ? "bg-green-700 hover:bg-green-800"
+                : "bg-gray-400 cursor-not-allowed"
+            }
+          `}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>
