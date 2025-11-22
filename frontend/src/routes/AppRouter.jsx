@@ -6,7 +6,10 @@ import HomePage from "../pages/user/home.jsx";
 import LoginPage from "../pages/user/login";
 import RegisterPage from "../pages/user/register";
 import EventDetailPage from "../pages/user/event_detail";
-
+import ApprovalPage from "../pages/admin/approval";
+import AcceptedPage from "../pages/admin/event_accepted";
+import ReportedPage from "../pages/admin/reported_event";
+import ApprovalDetailPage from "../pages/admin/approval_detail_adm";
 
 // Import hook untuk mendapatkan parameter URL (opsional, tapi sering digunakan di halaman detail)
 import { useParams } from "react-router-dom";
@@ -51,6 +54,11 @@ const AppRouter = () => {
       {/* 🟢 RUTE BARU: Detail Event Dinamis */}
       {/* Menggunakan parameter :slug untuk mencocokkan URL /event/deepblue-movement */}
       <Route path="/event/:slug" element={<EventDetailPage />} />   
+      {/* 🟢 RUTE ADMIN */}
+      <Route path="/approval" element={<ApprovalPage />} />
+      <Route path="/event_accepted" element={<AcceptedPage />} />
+      <Route path="/reported_event" element={<ReportedPage />} />
+      <Route path="/approval_detail_adm/:id" element={<ApprovalDetailPage />} />
         {/* Default '/' langsung diarahkan ke /home */}
             <Route path="/" element={<Navigate to="/home" replace />} />     {" "}
       {/* Catch-all 404 */}     {" "}

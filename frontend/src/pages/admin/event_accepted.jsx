@@ -1,31 +1,58 @@
 import React, { useMemo, useState } from "react";
 import { Users, Search } from "lucide-react";
-import AdminNavbar from "../../components/navbar_adm";
-import TableApproval from "../../components/table_approval";
+import AdminNavbar from "../../components/navbar_adm.jsx";
+import EventCard from "../../components/event_card.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
 
-const sampleEvents = [
-  {
-    id: "1",
+ const mockEvents = [
+  /*{
+    id: 1,
     title: "DeepBlue Movement",
+    date: "SEP 18",
+    location: "Yogyakarta Indonesia",
+    organizer: "Sea Care Indonesia",
+    imageUrl: MOCK_CARD_IMAGE,
+    category: "LAUT",
   },
   {
-    id: "2",
-    title: "GreenCity Tree Planting Day",
-  }
-];
+    id: 2,
+    title: "Ocean Cleanup",
+    date: "OCT 05",
+    location: "Bali Indonesia",
+    organizer: "CleanSea Org",
+    imageUrl: MOCK_CARD_IMAGE,
+    category: "LAUT",
+  },
+  {
+    id: 3,
+    title: "Mangrove Planting",
+    date: "NOV 12",
+    location: "Jakarta Indonesia",
+    organizer: "GreenAction",
+    imageUrl: MOCK_CARD_IMAGE,
+    category: "HIJAU",
+  },
+  {
+    id: 4,
+    title: "Beach Awareness",
+    date: "DEC 01",
+    location: "Lombok Indonesia",
+    organizer: "EcoWave",
+    imageUrl: MOCK_CARD_IMAGE,
+    category: "EDUKASI",
+  }, */
+]; 
 
-const ApprovalPage = () => {
+const AcceptedPage = () => {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return sampleEvents;
-
-    return sampleEvents.filter(
+    if (!q) return mockEvents;
+    return mockEvents.filter(
       (e) =>
-        String(e.id).toLowerCase().includes(q) ||
-        e.title.toLowerCase().includes(q)
+        e.title.toLowerCase().includes(q) ||
+        e.organizer.toLowerCase().includes(q)
     );
   }, [query]);
 
@@ -34,8 +61,10 @@ const ApprovalPage = () => {
       <AdminNavbar />
 
       <main className="max-w-[1500px] mx-auto px-6 py-8">
+        {/* White rounded card */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
 
+          {/* Top row: total + search*/}
           <div className="flex items-center justify-between px-8 py-6 border-b">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-50 rounded-full">
@@ -45,9 +74,9 @@ const ApprovalPage = () => {
               <div>
                 <div className="text-sm text-gray-500">Total Event:</div>
                 <div className="text-xl font-bold text-gray-900">
-                  {filtered.length}
+                  {filtered.length}{" "}
                   <span className="text-base font-medium text-gray-600">
-                    {" "}Events
+                    Events
                   </span>
                 </div>
               </div>
@@ -67,26 +96,18 @@ const ApprovalPage = () => {
             </div>
           </div>
 
-          <div className="bg-gray-600 text-white py-4 px-6 grid grid-cols-[180px_1fr_200px] items-center">
-            <div className="font-semibold">ID Event</div>
-            <div className="text-center font-semibold">Event Name</div>
-            <div></div>
+          {/* Event Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 p-8">
+            {filtered.length === 0 ? (
+              <div className="col-span-2 text-center py-20 text-gray-500 text-lg">
+                No events found.
+              </div>
+                ) : (
+              filtered.map((event) => (
+                <EventCard key={event.id} {...event} />
+              ))
+            )}
           </div>
-
-          {filtered.length > 0 ? (
-            filtered.map((ev) => (
-              <TableApproval
-                key={ev.id}
-                eventId={ev.id}
-                eventTitle={ev.title}
-              />
-            ))
-          ) : (
-            <div className="py-10 text-center text-gray-500 text-sm">
-              No events waiting for approval.
-            </div>
-          )}
-
           <div className="h-6" />
         </div>
       </main>
@@ -94,4 +115,4 @@ const ApprovalPage = () => {
   );
 };
 
-export default ApprovalPage;
+export default AcceptedPage;
