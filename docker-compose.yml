@@ -56,16 +56,31 @@ services:
     networks:
       - impactin-network
 
-  frontend:
+  frontend_admin:
     build:
-      context: ./frontend
+      context: ./frontend-admin
       dockerfile: Dockerfile
-    container_name: impactin-frontend
+    container_name: impactin-frontend-admin
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/assets:/app/assets
+      - ./frontend-admin/src:/app/src
     ports:
       - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+    networks:
+      - impactin-network
+
+  frontend_user:
+    build:
+      context: ./frontend-user
+      dockerfile: Dockerfile
+    container_name: impactin-frontend-user
+    volumes:
+      - ./frontend-user/src:/app/src
+    ports:
+      - "5174:5174"
     environment:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
