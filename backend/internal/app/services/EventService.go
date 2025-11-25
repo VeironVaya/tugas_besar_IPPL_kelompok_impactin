@@ -39,16 +39,14 @@ func (s *EventService) PostEvent(eventDto *request.EventRequestDto) error {
 }
 
 func (s *EventService) GetAllEvents() ([]response.EventResponseDto, error) {
-	// Step 1: Get data from repository
+
 	events, err := s.repo.FindAll()
 	if err != nil {
 		return nil, err
 	}
 
-	// Step 2: Prepare slice of response DTOs
 	var eventDtos []response.EventResponseDto
 
-	// Step 3: Map each model to a response DTO
 	for _, e := range events {
 		eventDtos = append(eventDtos, response.EventResponseDto{
 			ID:                 e.ID,
@@ -71,6 +69,5 @@ func (s *EventService) GetAllEvents() ([]response.EventResponseDto, error) {
 		})
 	}
 
-	// Step 4: Return
 	return eventDtos, nil
 }

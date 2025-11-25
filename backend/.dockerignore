@@ -1,0 +1,37 @@
+# Version control
+.git
+.gitignore
+
+# IDEs and editors
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test coverage
+*.out
+coverage.txt
+
+# Temporary files
+*.tmp
+.env.local
+.env.*.local
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Node modules (if any frontend code in backend folder)
+node_modules/
