@@ -1,70 +1,58 @@
 import React, { useMemo, useState } from "react";
 import { Users, Search } from "lucide-react";
 import AdminNavbar from "../../components/navbar_adm.jsx";
-import EventCard from "../../components/event_card.jsx";
-import MOCK_CARD_IMAGE from "../../assets/hero news.png";
+import TableOverview from "../../components/table_overview.jsx";
 
- const mockEvents = [
-  /*{
-    id: 1,
-    title: "DeepBlue Movement",
-    date: "SEP 18",
-    location: "Yogyakarta Indonesia",
-    organizer: "Sea Care Indonesia",
-    imageUrl: MOCK_CARD_IMAGE,
-    category: "LAUT",
+const mockEvents = [
+  {
+    id: "1",
+    title: "BlueWave Coastal Restoration",
+    status: "accepted",
   },
   {
-    id: 2,
-    title: "Ocean Cleanup",
-    date: "OCT 05",
-    location: "Bali Indonesia",
-    organizer: "CleanSea Org",
-    imageUrl: MOCK_CARD_IMAGE,
-    category: "LAUT",
+    id: "2",
+    title: "Urban Forest Revival",
+    status: "not accepted",
   },
   {
-    id: 3,
-    title: "Mangrove Planting",
-    date: "NOV 12",
-    location: "Jakarta Indonesia",
-    organizer: "GreenAction",
-    imageUrl: MOCK_CARD_IMAGE,
-    category: "HIJAU",
+    id: "3",
+    title: "Solar Light Charity Run",
+    status: "accepted",
   },
-  {
-    id: 4,
-    title: "Beach Awareness",
-    date: "DEC 01",
-    location: "Lombok Indonesia",
-    organizer: "EcoWave",
-    imageUrl: MOCK_CARD_IMAGE,
-    category: "EDUKASI",
-  }, */
-]; 
+];
 
 const AcceptedPage = () => {
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("accepted"); // default filter
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return mockEvents;
-    return mockEvents.filter(
-      (e) =>
-        e.title.toLowerCase().includes(q) ||
-        e.organizer.toLowerCase().includes(q)
+
+    // 1️⃣ Filter by status first (same as sampleReport)
+    const baseFiltered = mockEvents.filter(
+      (e) => e.status.toLowerCase() === filter.toLowerCase()
     );
-  }, [query]);
+
+    // 2️⃣ If search is empty → return base list
+    if (!q) return baseFiltered;
+
+    // 3️⃣ Search inside filtered list
+    return baseFiltered.filter(
+      (e) =>
+        String(e.id).toLowerCase().includes(q) ||
+        e.title.toLowerCase().includes(q) ||
+        e.status.toLowerCase().includes(q)
+    );
+  }, [query, filter]);
 
   return (
     <div className="min-h-screen bg-gray-100">
       <AdminNavbar />
 
       <main className="max-w-[1500px] mx-auto px-6 py-8">
-        {/* White rounded card */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
 
-          {/* Top row: total + search*/}
+          {/* Header */}
           <div className="flex items-center justify-between px-8 py-6 border-b">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-50 rounded-full">
@@ -72,16 +60,42 @@ const AcceptedPage = () => {
               </div>
 
               <div>
-                <div className="text-sm text-gray-500">Total Event:</div>
+                <div className="text-sm text-gray-500">Total Events:</div>
                 <div className="text-xl font-bold text-gray-900">
-                  {filtered.length}{" "}
+                  {filtered.length}
                   <span className="text-base font-medium text-gray-600">
-                    Events
+                    {" "}Events
                   </span>
                 </div>
               </div>
             </div>
 
+            {/* Status Buttons */}
+            <div className="flex border border-gray-400 rounded-md overflow-hidden text-sm font-semibold ml-40">
+              <button
+                onClick={() => setFilter("accepted")}
+                className={`px-12 py-2 border-r border-gray-400 ${
+                  filter === "accepted"
+                    ? "bg-gray-200"
+                    : "bg-gray-100 hover:bg-gray-200"
+                }`}
+              >
+                Accepted
+              </button>
+
+              <button
+                onClick={() => setFilter("not accepted")}
+                className={`px-8 py-2 ${
+                  filter === "not accepted"
+                    ? "bg-gray-200"
+                    : "bg-gray-100 hover:bg-gray-200"
+                }`}
+              >
+                Not Accepted
+              </button>
+            </div>
+
+            {/* Search */}
             <div className="w-72">
               <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -96,19 +110,32 @@ const AcceptedPage = () => {
             </div>
           </div>
 
-          {/* Event Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 p-8">
-            {filtered.length === 0 ? (
-              <div className="col-span-2 text-center py-20 text-gray-500 text-lg">
-                No events found.
-              </div>
-                ) : (
+          {/* Table Header */}
+          <div className="bg-gray-600 text-white py-4 px-6 grid grid-cols-[180px_1fr_200px] items-center">
+            <div className="font-semibold">ID Event</div>
+            <div className="text-center font-semibold">Event Name</div>
+            <div></div>
+          </div>
+
+          {/* Table Content */}
+          <div className="divide-y">
+            {filtered.length > 0 ? (
               filtered.map((event) => (
-                <EventCard key={event.id} {...event} />
+                <TableOverview
+                  key={event.id}
+                  eventId={event.id}
+                  eventTitle={event.title}
+                />
               ))
+            ) : (
+              <div className="py-10 text-center text-gray-500 text-sm">
+                {filter === "accepted"
+                  ? "There are no accepted events"
+                  : "There are no events that were not accepted"}
+              </div>
             )}
           </div>
-          <div className="h-6" />
+
         </div>
       </main>
     </div>
