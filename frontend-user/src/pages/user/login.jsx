@@ -42,7 +42,7 @@ const LoginPage = () => {
         </div>
 
         <p className="text-gray-200 text-sm text-center mb-8">
-          Welcome Back! Drop your registered username
+          Welcome Back! Drop your registered username here
         </p>
 
         {/* FORM */}
