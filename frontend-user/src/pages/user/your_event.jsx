@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import Header from "../../components/navbar.jsx";
 
 const YourEventPage = () => {
   const navigate = useNavigate();
@@ -40,6 +41,8 @@ const YourEventPage = () => {
   };
 
   return (
+    <>
+      <Header />
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-200 px-6 py-10">
       <div className="max-w-6xl mx-auto grid grid-cols-12 gap-6">
 
@@ -115,6 +118,7 @@ const YourEventPage = () => {
 
       </div>
     </div>
+    </>
   );
 };
 
