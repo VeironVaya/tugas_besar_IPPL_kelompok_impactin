@@ -7,6 +7,7 @@ import HomePage from "../pages/user/home.jsx";
 import LoginPage from "../pages/user/login.jsx";
 import RegisterPage from "../pages/user/register.jsx";
 import ProfilePage from "../pages/user/profile.jsx";
+import EditProfilePage from "../pages/user/edit_profile.jsx";
 
 // Event pages
 import EventDetailPage from "../pages/user/event_detail.jsx";
@@ -72,6 +73,15 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/edit_profile"
+        element={
+          <ProtectedRoute>
+            <EditProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Default "/" → home */}
       <Route path="/" element={<Navigate to="/home" replace />} />
       {/* 404 Page */}
