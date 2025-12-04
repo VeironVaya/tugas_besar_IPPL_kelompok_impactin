@@ -1,9 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-import avatarImg from "../../assets/user-photo.png";
+import avatarImg from "../../assets/photo avatar of user profile.png";
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
+
   const user = {
     name: "Nabila Azhari",
     role: "Student",
@@ -123,7 +126,11 @@ const ProfilePage = () => {
                 <p className="mt-4 text-green-900 italic">{user.bio}</p>
               </div>
 
-              <button className="ml-auto px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800">
+              {/* BUTTON EDIT PROFILE */}
+              <button
+                onClick={() => navigate("/edit_profile")}
+                className="ml-auto px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800"
+              >
                 Edit Profile
               </button>
             </div>
@@ -188,7 +195,7 @@ const ProfilePage = () => {
                 </button>
               </div>
 
-              {/* Show Add Experience button ONLY on normal experience tab */}
+              {/* Add Experience button ONLY for user experience */}
               {tab === "experience" && (
                 <button
                   onClick={() => setShowModal(true)}
