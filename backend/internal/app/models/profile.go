@@ -9,4 +9,5 @@ type Profile struct {
 	Age       *int
 	City      *string `gorm:"size:100"`
 	Bio       *string `gorm:"size:255"`
+	Image     *string `gorm:"size:255"`
 }

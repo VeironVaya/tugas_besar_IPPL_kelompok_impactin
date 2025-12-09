@@ -9,6 +9,7 @@ type EditProfileSkillResponseDto struct {
 	Age       *int     `json:"age"`
 	City      *string  `json:"city"`
 	Bio       *string  `json:"bio"`
+	ImageURL  *string  `json:"image_url"`
 	Skills    []SkillResponseDto `json:"skills"`
 	Message   string   `json:"message"`
 }
