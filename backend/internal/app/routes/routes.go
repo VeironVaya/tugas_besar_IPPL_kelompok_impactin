@@ -23,23 +23,13 @@ func UserRoutes(router *gin.Engine, userController *controllers.UserController) 
 	}
 }
 
-func SkillRoutes(router *gin.Engine, skillController *controllers.SkillController) {
-	r := router.Group("/api/user/skills")
-	r.Use(utils.Auth()) // pakai JWT
-
-	{
-		r.PUT("/", skillController.UpdateSkills)
-		r.GET("/", skillController.GetSkills)
-	}
-}
-
 func ProfileRoutes(router *gin.Engine, profileController *controllers.ProfileController) {
 	r := router.Group("/api/user/profile")
-	r.Use(utils.Auth()) // pakai JWT
+	r.Use(utils.Auth()) // JWT middleware
 
 	{
 		r.GET("/", profileController.GetProfile)
-		r.PATCH("/", profileController.UpdateProfile)
+		r.PATCH("/edit", profileController.EditProfileAndSkills)
 	}
 }
 
@@ -47,11 +37,9 @@ func ProfileRoutes(router *gin.Engine, profileController *controllers.ProfileCon
 func SetupAllRoutes(router *gin.Engine,
 	eventController *controllers.EventController,
 	userController *controllers.UserController,
-	skillController *controllers.SkillController,
 	profileController *controllers.ProfileController,
 ) {
 	EventRoutes(router, eventController)
 	UserRoutes(router, userController)
-	SkillRoutes(router, skillController)
 	ProfileRoutes(router, profileController)
 }
