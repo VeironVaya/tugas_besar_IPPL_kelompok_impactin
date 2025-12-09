@@ -20,34 +20,42 @@ func NewProfileController(ps services.ProfileService) *ProfileController {
 
 func (c *ProfileController) GetProfile(ctx *gin.Context) {
 	userID, _ := utils.GetUserIDFromContext(ctx)
-	data, err := c.profileService.GetProfile(userID)
+
+	resp, err := c.profileService.GetProfile(userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "profile retrieved",
-		"data":    data,
-	})
+	ctx.JSON(http.StatusOK, resp)
 }
 
-func (c *ProfileController) UpdateProfile(ctx *gin.Context) {
-	userID, _ := utils.GetUserIDFromContext(ctx)
-	var req request.ProfileRequestDto
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+
+func (c *ProfileController) EditProfileAndSkills(ctx *gin.Context) {
+	var dto request.EditProfileSkillRequestDto
+
+	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	data, err := c.profileService.UpdateProfile(userID, req)
+	uid, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	userID, ok := uid.(uint)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token user id"})
+		return
+	}
+
+	resp, err := c.profileService.EditProfileAndSkills(userID, dto)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "profile updated",
-		"data":    data,
-	})
+	ctx.JSON(http.StatusOK, resp)
 }

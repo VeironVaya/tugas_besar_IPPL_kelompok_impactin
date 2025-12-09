@@ -21,18 +21,14 @@ func main() {
 	eventSvc := services.NewEventService(eventRepo)
 	eventCtrl := controllers.NewEventController(eventSvc)
 
-	// === User & Profile wiring ===
+	// === User, Skill & Profile wiring ===
 	userRepo := repositories.NewUserRepository(db)
 	profileRepo := repositories.NewProfileRepository(db)
+	skillRepo := repositories.NewSkillRepository(db)
 	userSvc := services.NewUserService(userRepo, profileRepo)
 	userCtrl := controllers.NewUserController(userSvc)
-	profileSvc := services.NewProfileService(profileRepo, userRepo)
+	profileSvc := services.NewProfileService(profileRepo, userRepo, skillRepo)
 	profileCtrl := controllers.NewProfileController(profileSvc)
-
-	// === Skill Wiring ===
-	skillRepo := repositories.NewSkillRepository(db)
-	skillSvc := services.NewSkillService(skillRepo)
-	skillCtrl := controllers.NewSkillController(skillSvc)
 
 	// Setup Gin router and routes
 	r := gin.Default()
@@ -40,7 +36,6 @@ func main() {
 		r,
 		eventCtrl,
 		userCtrl,
-		skillCtrl,
 		profileCtrl,
 	)
 
