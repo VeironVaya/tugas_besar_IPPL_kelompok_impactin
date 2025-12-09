@@ -41,13 +41,10 @@ const EditProfile = () => {
         canvas.height = MAX_SIZE;
 
         // cover crop: agar tidak gepeng
-        const scale = Math.max(
-          MAX_SIZE / img.width,
-          MAX_SIZE / img.height
-        );
+        const scale = Math.max(MAX_SIZE / img.width, MAX_SIZE / img.height);
 
-        const x = (MAX_SIZE / 2) - (img.width / 2) * scale;
-        const y = (MAX_SIZE / 2) - (img.height / 2) * scale;
+        const x = MAX_SIZE / 2 - (img.width / 2) * scale;
+        const y = MAX_SIZE / 2 - (img.height / 2) * scale;
 
         ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
 
@@ -79,7 +76,6 @@ const EditProfile = () => {
 
       <div className="min-h-screen bg-green-50 py-10 px-6">
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-md">
-          
           <h1 className="text-2xl font-bold text-green-800 mb-6">
             Edit Profile
           </h1>
@@ -104,15 +100,12 @@ const EditProfile = () => {
                 className="text-sm"
               />
 
-              <p className="text-xs text-gray-500 mt-1">
-                Maksimal 300×300px (auto resize)
-              </p>
+              <p className="text-xs text-gray-500 mt-1"></p>
             </div>
           </div>
 
           {/* FORM */}
           <div className="space-y-5">
-            
             {/* NAME */}
             <div>
               <label className="font-semibold text-sm">Name</label>
@@ -152,6 +145,19 @@ const EditProfile = () => {
               />
             </div>
 
+            {/* STATUS */}
+            <div>
+              <label className="font-semibold text-sm">Status</label>
+              <input
+                type="text"
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+                className="w-full p-2 border rounded-lg mt-1"
+              />
+            </div>
+
             {/* BIO */}
             <div>
               <label className="font-semibold text-sm">Bio</label>
@@ -179,9 +185,7 @@ const EditProfile = () => {
                       onClick={() =>
                         setFormData({
                           ...formData,
-                          skills: formData.skills.filter(
-                            (_, idx) => idx !== i
-                          ),
+                          skills: formData.skills.filter((_, idx) => idx !== i),
                         })
                       }
                       className="text-red-500 text-xs"
@@ -227,7 +231,6 @@ const EditProfile = () => {
               Save Changes
             </button>
           </div>
-
         </div>
       </div>
     </>

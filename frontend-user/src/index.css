@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tambahkan styling dasar untuk body agar min-height berfungsi di seluruh aplikasi */
+/*  styling dasar untuk body agar min-height berfungsi di seluruh aplikasi */
 body {
   /* Gunakan font yang sesuai, misalnya Inter jika tersedia */
   font-family: "Inter", sans-serif;
