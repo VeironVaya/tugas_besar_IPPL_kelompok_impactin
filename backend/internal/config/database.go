@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"backend/internal/app/models"
 
@@ -11,12 +12,27 @@ import (
 )
 
 func InitDB() *gorm.DB {
-	// You can later load these from environment variables (.env)
-	user := "root"
-	password := "" // your MySQL password
-	host := "127.0.0.1"
-	port := "3306"
-	dbname := "impactin_db"
+	// Load from environment variables with sensible defaults
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		user = "root"
+	}
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		password = "" // default: no password (for local dev)
+	}
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "3306"
+	}
+	dbname := os.Getenv("DB_NAME")
+	if dbname == "" {
+		dbname = "impactin_db"
+	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		user, password, host, port, dbname)
