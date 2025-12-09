@@ -65,6 +65,7 @@ func (s *profileService) GetProfile(userID uint) (response.EditProfileSkillRespo
 		Age:       profile.Age,
 		City:      profile.City,
 		Bio:       profile.Bio,
+		ImageURL:  profile.Image,
 		Skills:    skillDtos,
 		Message:   "profile retrieved",
 	}, nil
@@ -91,6 +92,7 @@ func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfi
 	profile.Age = dto.Age
 	profile.City = dto.City
 	profile.Bio = dto.Bio
+	profile.Image = dto.ImageURL
 
 	// --- Save ke DB ---
 	err = s.profileRepo.Update(profile)
@@ -130,6 +132,7 @@ func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfi
 		Age:       profile.Age,
 		City:      profile.City,
 		Bio:       profile.Bio,
+		ImageURL:  profile.Image,
 		Skills:    skillDtos,
 		Message:   "profile & skills updated",
 	}, nil

@@ -7,5 +7,6 @@ type EditProfileSkillRequestDto struct {
     Age      *int     `json:"age"`
     City     *string  `json:"city"`
     Bio      *string  `json:"bio"`
+    ImageURL *string  `json:"image_url"`
     Skills   []string `json:"skills"`
 }
