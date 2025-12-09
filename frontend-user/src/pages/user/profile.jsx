@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
 import avatarImg from "../../assets/photo avatar of user profile.png";
+import Footer from "../../components/footer.jsx";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -318,6 +319,7 @@ const ProfilePage = () => {
           </div>
         </div>
       )}
+      <Footer />
     </>
   );
 };
