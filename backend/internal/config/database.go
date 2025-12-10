@@ -36,6 +36,23 @@ func InitDB() *gorm.DB {
 		dbname = "impactin_db"
 	}
 
+	// ===================================================
+	// 🟢 AUTO CREATE DATABASE (minimal change)
+	// ===================================================
+	dsnRoot := fmt.Sprintf("%s:%s@tcp(%s:%s)/?charset=utf8mb4&parseTime=True&loc=Local",
+		user, password, host, port)
+
+	rootDB, err := gorm.Open(mysql.Open(dsnRoot), &gorm.Config{})
+	if err != nil {
+		log.Fatal("❌ Cannot connect to MySQL server:", err)
+	}
+
+	createQuery := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", dbname)
+	if err := rootDB.Exec(createQuery).Error; err != nil {
+		log.Fatal("❌ Failed creating DB:", err)
+	}
+	fmt.Println("🟢 Database ensured:", dbname)
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		user, password, host, port, dbname)
 
