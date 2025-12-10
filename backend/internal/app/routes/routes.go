@@ -33,7 +33,6 @@ func ProfileRoutes(router *gin.Engine, profileController *controllers.ProfileCon
 	}
 }
 
-
 func SetupAllRoutes(router *gin.Engine,
 	eventController *controllers.EventController,
 	userController *controllers.UserController,

@@ -5,6 +5,7 @@ import (
 	"backend/internal/app/repositories"
 	"backend/internal/app/routes"
 	"backend/internal/app/services"
+	"backend/internal/app/utils"
 	"backend/internal/config"
 
 	"log"
@@ -32,6 +33,8 @@ func main() {
 
 	// Setup Gin router and routes
 	r := gin.Default()
+
+	r.Use(utils.CORSMiddleware())
 	routes.SetupAllRoutes(
 		r,
 		eventCtrl,
