@@ -29,8 +29,6 @@ coverage.txt
 .env.*.local
 
 # Docker files
-Dockerfile
-docker-compose.yml
 .dockerignore
 
 # Node modules (if any frontend code in backend folder)
