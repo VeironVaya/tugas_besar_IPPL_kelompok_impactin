@@ -48,6 +48,7 @@ services:
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_NAME=impactin_db
+      - RESET_DB=true
     ports:
       - "8080:8080"
     depends_on:
@@ -55,6 +56,8 @@ services:
         condition: service_healthy
     networks:
       - impactin-network
+
+
 
   frontend_admin:
     build:
@@ -95,3 +98,6 @@ volumes:
 networks:
   impactin-network:
     driver: bridge
+
+
+

@@ -1,9 +1,11 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"backend/internal/app/models"
 
@@ -42,23 +44,58 @@ func InitDB() *gorm.DB {
 		log.Fatal("❌ Failed to connect to database: ", err)
 	}
 
-	// --- Safe AutoMigrate ---
 	tables := []interface{}{
 		&models.Event{},
 		&models.User{},
 		&models.Skill{},
 		&models.Profile{},
 	}
+	// Detect Docker container
+	runningInDocker := isRunningInDocker()
 
-	for _, table := range tables {
-		if !db.Migrator().HasTable(table) {
-			err := db.AutoMigrate(table)
-			if err != nil {
-				log.Fatalf("❌ Failed to migrate table %T: %v", table, err)
-			}
+	var reset bool
+
+	if runningInDocker {
+		// ------------- Docker Mode -------------
+		// Use environment variable
+		reset = strings.ToLower(os.Getenv("RESET_DB")) == "true"
+		fmt.Println("🔧 Docker mode detected. RESET_DB =", reset)
+	} else {
+		// ------------- Local CLI Mode -------------
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Delete all tables and start fresh? (yes/no): ")
+
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(strings.ToLower(input))
+		reset = (input == "yes" || input == "y")
+	}
+
+	if reset {
+		fmt.Println("⚠️ Dropping all tables...")
+		db.Migrator().DropTable(tables...)
+		fmt.Println("🔧 Migrating fresh tables...")
+		if err := db.AutoMigrate(tables...); err != nil {
+			log.Fatal("❌ Migration failed:", err)
+		}
+		fmt.Println("✅ Fresh database created!")
+		return db
+	}
+
+	fmt.Println("👌 Skipping table drop. Safe migrate...")
+	for _, t := range tables {
+		if !db.Migrator().HasTable(t) {
+			db.AutoMigrate(t)
 		}
 	}
 
-	log.Println("✅ MySQL Connected Successfully")
+	fmt.Println("✅ Database ready without modifying constraints!")
 	return db
+}
+
+// Detect Docker
+func isRunningInDocker() bool {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+	return false
 }
