@@ -64,7 +64,7 @@ const sampleEvents = [
 const Field = ({ label, children }) => (
   <div className="space-y-1">
     <label className="text-xs font-semibold text-gray-600">{label}</label>
-    <div className="border rounded-md px-3 py-2 bg-white text-gray-800 min-h-[40px] leading-relaxed">
+    <div className="border rounded-md px-3 py-2 bg-gray-100 text-gray-800 min-h-[40px] leading-relaxed">
       {children}
     </div>
   </div>
@@ -78,9 +78,11 @@ const ApprovalDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <AdminNavbar />
+      <nav className="sticky top-0 z-50 bg-white shadow-sm">
+        <AdminNavbar />
+      </nav>
 
-      <div className="overflow-y-auto h-[calc(100vh-64px)] px-6 py-6">
+      <div className="px-6 py-6">
         <div className="bg-white rounded-lg shadow p-6 space-y-6 max-w-5xl mx-auto">
 
           <h2 className="text-lg font-semibold">Event Information for ID: {event.id}</h2>
@@ -108,7 +110,7 @@ const ApprovalDetailPage = () => {
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-600">Event Cover</label>
-              <div className="border rounded-md px-3 py-2 bg-white flex items-center gap-3">
+              <div className="border rounded-md px-3 py-2 bg-gray-100 flex items-center gap-3">
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M16 3v4M8 3v4" />
                 </svg>
@@ -127,7 +129,7 @@ const ApprovalDetailPage = () => {
           {/* Description */}
           <div>
             <label className="text-xs font-semibold text-gray-600">Event Description</label>
-            <div className="border rounded-md p-3 bg-white max-h-60 overflow-y-auto whitespace-pre-wrap text-sm mt-1">
+            <div className="border rounded-md p-3 bg-gray-100 max-h-60 overflow-y-auto whitespace-pre-wrap text-sm mt-1">
               {event.description}
             </div>
           </div>
@@ -135,7 +137,7 @@ const ApprovalDetailPage = () => {
           {/* Terms */}
           <div>
             <label className="text-xs font-semibold text-gray-600">Terms & Conditions</label>
-            <div className="border rounded-md p-3 bg-white max-h-60 overflow-y-auto whitespace-pre-wrap text-sm mt-1">
+            <div className="border rounded-md p-3 bg-gray-100 max-h-60 overflow-y-auto whitespace-pre-wrap text-sm mt-1">
               {event.terms}
             </div>
           </div>
@@ -149,7 +151,7 @@ const ApprovalDetailPage = () => {
           {/* Group Link */}
           <div>
             <label className="text-xs font-semibold text-gray-600">Group Link</label>
-            <div className="border rounded-md px-3 py-2 bg-white">
+            <div className="border rounded-md px-3 py-2 bg-gray-100">
               <a
                 href={event.groupLink}
                 target="_blank"
