@@ -1,59 +1,69 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Users, Search } from "lucide-react";
 import AdminNavbar from "../../components/navbar_adm.jsx";
 import TableOverview from "../../components/table_overview.jsx";
 
 const mockEvents = [
-  {
-    id: "1",
-    title: "BlueWave Coastal Restoration",
-    status: "accepted",
-  },
-  {
-    id: "2",
-    title: "Urban Forest Revival",
-    status: "not accepted",
-  },
-  {
-    id: "3",
-    title: "Solar Light Charity Run",
-    status: "accepted",
-  },
+  { id: "1", title: "BlueWave Coastal Restoration", status: "accepted" },
+  { id: "2", title: "Urban Forest Revival", status: "not accepted" },
 ];
 
 const AcceptedPage = () => {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("accepted"); // default filter
+  const [query, setQuery] = useAState("");
+  const [filter, setFilter] = useState("accepted");
+  const [firstHeaderHeight, setFirstHeaderHeight] = useState(0);
+  const firstHeaderRef = useRef(null);
 
+  // FILTER + SEARCH LOGIC
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    // 1️⃣ Filter by status first (same as sampleReport)
     const baseFiltered = mockEvents.filter(
       (e) => e.status.toLowerCase() === filter.toLowerCase()
     );
 
-    // 2️⃣ If search is empty → return base list
     if (!q) return baseFiltered;
 
-    // 3️⃣ Search inside filtered list
     return baseFiltered.filter(
       (e) =>
         String(e.id).toLowerCase().includes(q) ||
-        e.title.toLowerCase().includes(q) ||
-        e.status.toLowerCase().includes(q)
+        e.title.toLowerCase().includes(q)
     );
   }, [query, filter]);
 
+  // measure header height on mount and on resize
+  useEffect(() => {
+    const measure = () => {
+      if (firstHeaderRef.current) {
+        setFirstHeaderHeight(firstHeaderRef.current.offsetHeight || 0);
+      }
+    };
+
+    measure(); // initial
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // ensure top is a number (navbar assumed 64px height)
+  const navbarHeight = 64;
+  const topOffset = navbarHeight + (Number(firstHeaderHeight) || 0);
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <AdminNavbar />
+      {/* NAVBAR */}
+      <nav className="sticky top-0 z-50 bg-white shadow-sm">
+        <AdminNavbar />
+      </nav>
 
       <main className="max-w-[1500px] mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {/* removed overflow-hidden so sticky works correctly */}
+        <div className="bg-white rounded-xl shadow-lg">
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-8 py-6 border-b">
+          {/* FIRST STICKY HEADER */}
+          <div
+            ref={firstHeaderRef}
+            className="sticky top-[64px] z-40 bg-white flex items-center justify-between px-8 py-6 border-b"
+          >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-50 rounded-full">
                 <Users className="w-6 h-6 text-blue-600" />
@@ -70,7 +80,7 @@ const AcceptedPage = () => {
               </div>
             </div>
 
-            {/* Status Buttons */}
+            {/* FILTER BUTTONS */}
             <div className="flex border border-gray-400 rounded-md overflow-hidden text-sm font-semibold ml-40">
               <button
                 onClick={() => setFilter("accepted")}
@@ -95,7 +105,7 @@ const AcceptedPage = () => {
               </button>
             </div>
 
-            {/* Search */}
+            {/* SEARCH */}
             <div className="w-72">
               <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -110,19 +120,22 @@ const AcceptedPage = () => {
             </div>
           </div>
 
-          {/* Table Header */}
-          <div className="bg-gray-600 text-white py-4 px-6 grid grid-cols-[180px_1fr_200px] items-center">
+          {/* SECOND STICKY TABLE HEADER */}
+          <div
+            className="sticky z-30 bg-gray-600 text-white py-4 px-6 grid grid-cols-[180px_1fr_200px] items-center"
+            style={{ top: topOffset }}
+          >
             <div className="font-semibold">ID Event</div>
             <div className="text-center font-semibold">Event Name</div>
             <div></div>
           </div>
 
-          {/* Table Content */}
-          <div className="divide-y">
+          {/* TABLE CONTENT */}
+          <div>
             {filtered.length > 0 ? (
-              filtered.map((event) => (
+              filtered.map((event, idx) => (
                 <TableOverview
-                  key={event.id}
+                  key={event.id ?? idx} // event.id is unique in mockEvents above
                   eventId={event.id}
                   eventTitle={event.title}
                 />
@@ -136,6 +149,7 @@ const AcceptedPage = () => {
             )}
           </div>
 
+          <div className="h-6" />
         </div>
       </main>
     </div>

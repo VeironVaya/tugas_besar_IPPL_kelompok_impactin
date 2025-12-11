@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const TableOverview = ({ eventId, eventTitle }) => {
   return (
-    <div className="border-t py-6 px-6 grid grid-cols-[200px_1fr_200px] items-center">
+    <div className="border-b py-6 px-6 grid grid-cols-[200px_1fr_200px] items-center">
       <div className="text-sm text-gray-700">{eventId}</div>
 
       <div className="text-center text-sm">{eventTitle}</div>

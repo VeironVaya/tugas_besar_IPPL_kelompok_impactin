@@ -7,6 +7,7 @@ import AcceptedPage from "../pages/admin/event_accepted";
 import ReportedPage from "../pages/admin/reported_event";
 import ApprovalDetailPage from "../pages/admin/approval_detail_adm";
 import OverviewDetailPage from "../pages/admin/overview_detail_adm";
+import ReportDetailPage from "../pages/admin/report_detail";
 
 const AppRouter = () => {
   return (
@@ -16,6 +17,7 @@ const AppRouter = () => {
       <Route path="/reported_event" element={<ReportedPage />} />
       <Route path="/approval_detail_adm/:id" element={<ApprovalDetailPage />} />
       <Route path="/overview_detail_adm/:id" element={<OverviewDetailPage />} />
+      <Route path="/report_detail/:id" element={<ReportDetailPage />} />
 
       <Route path="/" element={<Navigate to="/approval" replace />} />
 
