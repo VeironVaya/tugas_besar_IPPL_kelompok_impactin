@@ -210,6 +210,7 @@ export default function CreateEvent() {
               <div className="space-y-5 mt-4">
                 <div>
                   <label className="text-sm font-medium">
+        
                     Maximum Participant*
                   </label>
                   <input
@@ -217,7 +218,8 @@ export default function CreateEvent() {
                     name="maxParticipant"
                     value={formData.maxParticipant}
                     onChange={handleChange}
-                    placeholder="Set participant limit"
+                    min={1}
+                    placeholder="Set Maximum Participant"
                     className="w-full p-3 border rounded-lg mt-1"
                     required
                   />
@@ -268,6 +270,7 @@ export default function CreateEvent() {
                     <input
                       type="number"
                       name="minAge"
+                      min={1}
                       value={formData.minAge}
                       onChange={handleChange}
                       className="w-full p-3 border rounded-lg mt-1"
@@ -280,6 +283,7 @@ export default function CreateEvent() {
                     <input
                       type="number"
                       name="maxAge"
+                      min={1}
                       value={formData.maxAge}
                       onChange={handleChange}
                       className="w-full p-3 border rounded-lg mt-1"
@@ -289,7 +293,7 @@ export default function CreateEvent() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Group Link*</label>
+                  <label className="text-sm font-medium">Group Link</label>
                   <input
                     type="text"
                     name="groupLink"

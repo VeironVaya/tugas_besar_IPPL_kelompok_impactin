@@ -46,10 +46,11 @@ const EventDetailPage = () => {
     <>
       <Header />
 
-      <main className="min-h-screen bg-gray-50 pb-20">
+      <main className="min-h-screen bg-slate-50">
+
         {/* Event Detail Container */}
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+        <div className="w-full px-6 lg:px-0 py-10 lg:py-0">
+          <div className="bg-white rounded-xl overflow-hidden border border-gray-100">
             {/* TOP: Image + Info */}
             <div className="md:flex">
               {/* Image */}

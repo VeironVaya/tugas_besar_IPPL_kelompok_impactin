@@ -4,7 +4,7 @@ import Footer from "../../components/footer.jsx";
 import EventCard from "../../components/event_card.jsx";
 import HERO_IMAGE from "../../assets/hero news.png";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-import { MapPin, Calendar, Users } from "lucide-react"; 
+
 const mockEvents = [
   {
     id: 1,
@@ -44,46 +44,53 @@ const mockEvents = [
   },
 ];
 
-const topEvents = Array(10)
+const topEvents = Array(8)
   .fill(0)
   .map((_, i) => mockEvents[i % mockEvents.length]);
-const peduliLautEvents = Array(4)
+
+const peduliLautEvents = Array(8)
   .fill(0)
   .map((_, i) => mockEvents[i % mockEvents.length]);
 
 const HomePage = () => {
   return (
     <>
-      <Header />
+      {/* ✅ MAIN = SCROLL CONTEXT */}
+      <main className="relative bg-slate-50">
 
-      <main className="min-h-screen bg-white">
-        {/* Hero Banner */}
+        {/* ✅ HEADER HARUS DI DALAM MAIN */}
+        <Header />
+
+        {/* ================= HERO ================= */}
         <section
-          className="relative h-[80vh] w-full flex items-center bg-cover bg-center"
+          className="relative min-h-screen w-full flex bg-cover bg-center bg-fixed"
           style={{ backgroundImage: `url(${HERO_IMAGE})` }}
         >
           {/* Overlay */}
           <div className="absolute inset-0 bg-black/40"></div>
-          <div className="relative z-10 max-w-6xl mx-auto w-full px-6 lg:px-16">
-            <div className="text-left">
-              <h1 className="font-inter text-6xl md:text-6xl font-extrabold text-white leading-tight drop-shadow-lg text-left">
-                DeepBlue Movement
-              </h1>
 
-              <p className="font-inter text-lg md:text-2xl font-light text-white/90 mt-3 mb-8 text-left">
-                Protect the Depths, Preserve the Future
-              </p>
+          <div className="relative flex w-full">
+            <div className="max-w-6xl mx-auto px-6 lg:px-16 flex items-center min-h-screen">
+              <div>
+                <h1 className="font-inter text-6xl font-extrabold text-white leading-tight drop-shadow-lg">
+                  DeepBlue Movement
+                </h1>
 
-              <button className="bg-gradient-to-r from-green-700 to-blue-500 px-8 py-3 rounded-full text-sm md:text-base font-semibold text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-transform">
-                Explore Event
-              </button>
+                <p className="font-inter text-lg md:text-2xl font-light text-white/90 mt-3 mb-8">
+                  Protect the Depths, Preserve the Future
+                </p>
+
+                <button className="bg-gradient-to-r from-green-700 to-blue-500 px-8 py-3 rounded-full text-sm md:text-base font-semibold text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-transform">
+                  See Details
+                </button>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Top Event Section */}
+        {/* ================= TOP EVENT ================= */}
         <section className="w-full py-16">
-          <div className="max-w-7xl mx-auto px-6 lg:px-16">
+          <div className="mx-auto px-6 lg:px-16">
             <h2 className="text-gray-900 text-3xl font-extrabold mb-10 border-b-2 border-green-500 pb-2 inline-block">
               Top Event
             </h2>
@@ -96,8 +103,8 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* Peduli Laut Section */}
-        <section className="max-w-7xl mx-auto px-6 lg:px-16 py-16">
+        {/* ================= PEDULI LAUT ================= */}
+        <section className="mx-auto px-6 lg:px-16 py-16">
           <h2 className="text-3xl font-extrabold mb-10 flex items-center gap-3 text-gray-900 border-b-2 border-blue-500 pb-2 inline-block">
             <span className="text-blue-600">🌊</span> Peduli Laut
           </h2>
@@ -107,13 +114,8 @@ const HomePage = () => {
               <EventCard key={index} {...event} />
             ))}
           </div>
-
-          <div className="text-left mt-12">
-            <button className="bg-gradient-to-r from-blue-600 to-teal-400 px-10 py-3 rounded-lg text-lg font-semibold text-white shadow-lg hover:scale-105 transition-transform">
-              Lihat Semua Event Laut
-            </button>
-          </div>
         </section>
+
       </main>
 
       <Footer />
