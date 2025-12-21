@@ -14,6 +14,7 @@ import EventDetailPage from "../pages/user/event_detail.jsx";
 import YourEventPage from "../pages/user/your_event.jsx";
 import ManageEventPage from "../pages/user/manage_event.jsx";
 import CreateEventPage from "../pages/user/create_event.jsx";
+import Search from "../pages/user/search.jsx";
 
 // --- Protected Route ---
 import ProtectedRoute from "./protected_route";
@@ -35,7 +36,8 @@ const AppRouter = () => {
       <Route path="/home" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      
+      <Route path="/search" element={<Search />} />
+
       {/* ==============================
            PROTECTED ROUTES
       =============================== */}
@@ -63,6 +65,15 @@ const AppRouter = () => {
         element={
           <ProtectedRoute>
             <CreateEventPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* Create event list */}
+      <Route
+        path="/search-event"
+        element={
+          <ProtectedRoute>
+            <Search />
           </ProtectedRoute>
         }
       />
