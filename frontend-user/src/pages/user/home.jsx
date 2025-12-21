@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 import EventCard from "../../components/event_card.jsx";
 import HERO_IMAGE from "../../assets/hero news.png";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
 
+/* ================= MOCK EVENTS ================= */
 const mockEvents = [
   {
     id: 1,
@@ -13,7 +15,7 @@ const mockEvents = [
     location: "Yogyakarta Indonesia",
     organizer: "Sea Care Indonesia",
     imageUrl: MOCK_CARD_IMAGE,
-    category: "LAUT",
+    category: "Environment",
   },
   {
     id: 2,
@@ -22,7 +24,7 @@ const mockEvents = [
     location: "Bali Indonesia",
     organizer: "CleanSea Org",
     imageUrl: MOCK_CARD_IMAGE,
-    category: "LAUT",
+    category: "Environment",
   },
   {
     id: 3,
@@ -31,7 +33,7 @@ const mockEvents = [
     location: "Jakarta Indonesia",
     organizer: "GreenAction",
     imageUrl: MOCK_CARD_IMAGE,
-    category: "HIJAU",
+    category: "Community",
   },
   {
     id: 4,
@@ -40,33 +42,41 @@ const mockEvents = [
     location: "Lombok Indonesia",
     organizer: "EcoWave",
     imageUrl: MOCK_CARD_IMAGE,
-    category: "EDUKASI",
+    category: "Education",
+  },
+  {
+    id: 5,
+    title: "Public Health Campaign",
+    date: "JAN 20",
+    location: "Bandung Indonesia",
+    organizer: "HealthFirst",
+    imageUrl: MOCK_CARD_IMAGE,
+    category: "Health",
   },
 ];
 
-const topEvents = Array(8)
-  .fill(0)
-  .map((_, i) => mockEvents[i % mockEvents.length]);
-
-const peduliLautEvents = Array(8)
-  .fill(0)
-  .map((_, i) => mockEvents[i % mockEvents.length]);
+const categories = ["Environment", "Health", "Education", "Community"];
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const [activeCategory, setActiveCategory] = useState("Environment");
+
+  const featuredEvent = mockEvents[0];
+
+  const filteredEvents = mockEvents.filter(
+    (event) => event.category === activeCategory
+  );
+
   return (
     <>
-      {/* ✅ MAIN = SCROLL CONTEXT */}
       <main className="relative bg-slate-50">
-
-        {/* ✅ HEADER HARUS DI DALAM MAIN */}
         <Header />
 
-        {/* ================= HERO ================= */}
+        {/* ================= HERO (AMAN) ================= */}
         <section
           className="relative min-h-screen w-full flex bg-cover bg-center bg-fixed"
           style={{ backgroundImage: `url(${HERO_IMAGE})` }}
         >
-          {/* Overlay */}
           <div className="absolute inset-0 bg-black/40"></div>
 
           <div className="relative flex w-full">
@@ -80,7 +90,15 @@ const HomePage = () => {
                   Protect the Depths, Preserve the Future
                 </p>
 
-                <button className="bg-gradient-to-r from-green-700 to-blue-500 px-8 py-3 rounded-full text-sm md:text-base font-semibold text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-transform">
+                {/* SEE DETAILS → EVENT DETAIL */}
+                <button
+                  onClick={() =>
+                    navigate(`/event/${featuredEvent.id}`)
+                  }
+                  className="bg-gradient-to-r from-green-700 to-blue-500 px-8 py-3 rounded-full
+                             text-sm md:text-base font-semibold text-white shadow-lg
+                             hover:shadow-xl hover:scale-[1.02] transition-transform"
+                >
                   See Details
                 </button>
               </div>
@@ -88,34 +106,33 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* ================= TOP EVENT ================= */}
-        <section className="w-full py-16">
+        {/* ================= CATEGORY TABS ================= */}
+        <section className="w-full py-12">
           <div className="mx-auto px-6 lg:px-16">
-            <h2 className="text-gray-900 text-3xl font-extrabold mb-10 border-b-2 border-green-500 pb-2 inline-block">
-              Top Event
-            </h2>
+            <div className="flex flex-wrap gap-4 mb-10">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-5 py-2 rounded-full font-semibold text-sm transition
+                    ${
+                      activeCategory === cat
+                        ? "bg-green-700 text-white shadow"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
-              {topEvents.map((event, index) => (
-                <EventCard key={index} {...event} />
+              {filteredEvents.map((event) => (
+                <EventCard key={event.id} {...event} />
               ))}
             </div>
           </div>
         </section>
-
-        {/* ================= PEDULI LAUT ================= */}
-        <section className="mx-auto px-6 lg:px-16 py-16">
-          <h2 className="text-3xl font-extrabold mb-10 flex items-center gap-3 text-gray-900 border-b-2 border-blue-500 pb-2 inline-block">
-            <span className="text-blue-600">🌊</span> Peduli Laut
-          </h2>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
-            {peduliLautEvents.map((event, index) => (
-              <EventCard key={index} {...event} />
-            ))}
-          </div>
-        </section>
-
       </main>
 
       <Footer />
