@@ -42,8 +42,8 @@ func (r *eventRepository) GetAllEvents(category, search string, ageRanges []stri
 			profiles.name AS host_name
 		`).
 		Joins("JOIN profiles ON profiles.user_id = events.user_id").
-		Where("events.status = ?", "pending") //.
-		// Where("events.sub_status IN ?", []string{"opened", "closed"})
+		Where("events.status = ?", "approved").
+		Where("events.sub_status IN ?", []string{"opened", "closed"})
 		
    if category != "" {
       query = query.Where("LOWER(events.category) = LOWER(?)", category)
@@ -85,7 +85,7 @@ func (r *eventRepository) GetAllEvents(category, search string, ageRanges []stri
 		query = query.Where(ageQuery)
 	}
 
-   err := query.Order("events.id ASC").Scan(&events).Error
+   err := query.Order("events.start_date ASC").Scan(&events).Error
 
 	return events, err
 }
