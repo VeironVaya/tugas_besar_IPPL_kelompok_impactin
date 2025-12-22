@@ -1,22 +1,25 @@
 package request
 
-import "time"
-
 type EventRequestDto struct {
-	Title              string    `json:"event_title"`
-	Category           string    `json:"event_category"`
-	Location           string    `json:"event_location"`
-	LocationLink       string    `json:"event_location_link"`
-	SpecificAddress    string    `json:"event_specific_address"`
-	StartDate          time.Time `json:"event_start_date"`
-	StartTime          string    `json:"event_start_time"`
-	EndDate            time.Time `json:"event_end_date"`
-	EndTime            string    `json:"event_end_time"`
-	MaximumParticipant int       `json:"event_maximum_participant"`
-	Cover              string    `json:"event_cover"`
-	Description        string    `json:"event_description"`
-	Term               string    `json:"event_term"`
-	MinAge             int       `json:"event_min_age"`
-	MaxAge             int       `json:"event_max_age"`
-	GroupLink          string    `json:"event_group_link"`
+	Title           string    `json:"title" validate:"required"`
+	Category        string    `json:"category" validate:"required"`
+	Location        string    `json:"location" validate:"required"`
+	SpecificAddress string    `json:"specific_address" validate:"required"`
+	AddressLink     string    `json:"address_link" validate:"required,url"`
+
+	StartDate 		string `json:"start_date" validate:"required"`
+	EndDate   		string `json:"end_date" validate:"required"`
+	StartTime 		string 	  `json:"start_time" validate:"required"` // HH:mm
+	EndTime   		string 	  `json:"end_time" validate:"required"`
+
+	MaxParticipant 	int 	  `json:"max_participant" validate:"required,gt=0"`
+
+	CoverImage 		string `json:"cover_image" validate:"required,url"`
+	Description 	string `json:"description" validate:"required"`
+	Terms       	*string `json:"terms"`
+
+	MinAge 			int `json:"min_age"`
+	MaxAge 			int `json:"max_age"`
+
+	GroupLink 		string `json:"group_link" validate:"required,url"`
 }

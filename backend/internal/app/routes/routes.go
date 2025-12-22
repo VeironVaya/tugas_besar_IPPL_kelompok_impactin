@@ -8,10 +8,17 @@ import (
 )
 
 func EventRoutes(router *gin.Engine, eventController *controllers.EventController) {
-	r := router.Group("/api/events")
+	r := router.Group("api/events")
 	{
-		r.POST("/", eventController.PostEvent)
-		r.GET("/", eventController.GetEvents)
+		r.GET("/", eventController.GetAllEvents)
+	}
+
+	auth := router.Group("api/events")
+	auth.Use(utils.Auth()) // JWT middleware
+	{
+		auth.POST("/", eventController.CreateEvent)
+		auth.GET("/your", eventController.GetYourCreatedEvents)
+		auth.GET("/:event_id", eventController.GetEventDetail)
 	}
 }
 
@@ -30,6 +37,7 @@ func ProfileRoutes(router *gin.Engine, profileController *controllers.ProfileCon
 	{
 		r.GET("/", profileController.GetProfile)
 		r.PATCH("/edit", profileController.EditProfileAndSkills)
+		r.PATCH("/password", profileController.ChangePassword)
 	}
 }
 

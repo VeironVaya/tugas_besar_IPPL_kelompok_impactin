@@ -5,12 +5,17 @@ import (
 	"backend/internal/app/dtos/response"
 	"backend/internal/app/models"
 	"backend/internal/app/repositories"
+	"errors"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type ProfileService interface {
 	CreateProfile(userID uint, username string) error
 	GetProfile(userID uint) (response.EditProfileSkillResponseDto, error)
 	EditProfileAndSkills(userID uint, dto request.EditProfileSkillRequestDto) (response.EditProfileSkillResponseDto, error)
+	ChangePassword(userID uint, dto request.ChangePasswordRequestDto) (response.ChangePasswordResponseDto, error)
+	GetByUserID(userID uint) (*models.Profile, error)
 }
 
 type profileService struct {
@@ -82,8 +87,15 @@ func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfi
 
 	// --- Update Username ---
 	if dto.Username != nil && *dto.Username != profile.Username {
+		if s.userRepo.IsUsernameExistsExceptUser(*dto.Username, userID) {
+			return response.EditProfileSkillResponseDto{}, errors.New("username alreadt exists")
+		}
+
+		if err := s.userRepo.UpdateUsername(userID, *dto.Username); err != nil {
+			return response.EditProfileSkillResponseDto{}, err
+		}
+
 		profile.Username = *dto.Username
-		s.userRepo.UpdateUsername(userID, *dto.Username) // update tabel user
 	}
 
 	// --- Update biodata (opsional & nullable) ---
@@ -136,4 +148,38 @@ func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfi
 		Skills:    skillDtos,
 		Message:   "profile & skills updated",
 	}, nil
+}
+
+func (s *profileService) ChangePassword(userID uint, dto request.ChangePasswordRequestDto) (response.ChangePasswordResponseDto, error) {
+
+    user, err := s.userRepo.GetByID(userID)
+    if err != nil {
+        return response.ChangePasswordResponseDto{}, err
+    }
+	
+    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.OldPassword)); err != nil {
+        return response.ChangePasswordResponseDto{}, errors.New("wrong old password")
+    }
+	
+	if dto.OldPassword == dto.NewPassword {
+        return response.ChangePasswordResponseDto{}, errors.New("new password cannot be the same as old password")
+    }
+	
+    hashed, err := bcrypt.GenerateFromPassword([]byte(dto.NewPassword), bcrypt.DefaultCost)
+    if err != nil {
+        return response.ChangePasswordResponseDto{}, err
+    }
+
+    err = s.userRepo.UpdatePassword(userID, string(hashed))
+    if err != nil {
+        return response.ChangePasswordResponseDto{}, err
+    }
+
+    return response.ChangePasswordResponseDto{
+        Message: "password changed successfully",
+    }, nil
+}
+
+func (s *profileService) GetByUserID(userID uint) (*models.Profile, error) {
+	return s.profileRepo.GetByUserID(userID)
 }
