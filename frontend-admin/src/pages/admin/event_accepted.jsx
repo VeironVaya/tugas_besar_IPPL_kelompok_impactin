@@ -4,13 +4,13 @@ import AdminNavbar from "../../components/navbar_adm.jsx";
 import TableOverview from "../../components/table_overview.jsx";
 
 const mockEvents = [
-  { id: "1", title: "BlueWave Coastal Restoration", status: "accepted" },
-  { id: "2", title: "Urban Forest Revival", status: "not accepted" },
+  { id: "1", title: "BlueWave Coastal Restoration", status: "approved" },
+  { id: "2", title: "Urban Forest Revival", status: "declined" },
 ];
 
 const AcceptedPage = () => {
-  const [query, setQuery] = useAState("");
-  const [filter, setFilter] = useState("accepted");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("approved");
   const [firstHeaderHeight, setFirstHeaderHeight] = useState(0);
   const firstHeaderRef = useRef(null);
 
@@ -83,25 +83,25 @@ const AcceptedPage = () => {
             {/* FILTER BUTTONS */}
             <div className="flex border border-gray-400 rounded-md overflow-hidden text-sm font-semibold ml-40">
               <button
-                onClick={() => setFilter("accepted")}
+                onClick={() => setFilter("approved")}
                 className={`px-12 py-2 border-r border-gray-400 ${
-                  filter === "accepted"
+                  filter === "approved"
                     ? "bg-gray-200"
                     : "bg-gray-100 hover:bg-gray-200"
                 }`}
               >
-                Accepted
+                Approved
               </button>
 
               <button
-                onClick={() => setFilter("not accepted")}
-                className={`px-8 py-2 ${
-                  filter === "not accepted"
+                onClick={() => setFilter("declined")}
+                className={`px-12 py-2 ${
+                  filter === "declined"
                     ? "bg-gray-200"
                     : "bg-gray-100 hover:bg-gray-200"
                 }`}
               >
-                Not Accepted
+                Declined
               </button>
             </div>
 
@@ -142,9 +142,9 @@ const AcceptedPage = () => {
               ))
             ) : (
               <div className="py-10 text-center text-gray-500 text-sm">
-                {filter === "accepted"
-                  ? "There are no accepted events"
-                  : "There are no events that were not accepted"}
+                {filter === "approved"
+                  ? "There are no approved events"
+                  : "There are no events that were declined"}
               </div>
             )}
           </div>

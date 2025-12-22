@@ -188,7 +188,6 @@ const OverviewDetailPage = () => {
             </button>
           </div>
 
-
           <CancelEventPopUp
             open={openCancelModal}
             onClose={() => setOpenCancelModal(false)}
