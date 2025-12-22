@@ -135,3 +135,18 @@ func (c *EventController) GetEventDetail(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, event)
 }
+
+func (c *EventController) GetCarouselEvents(ctx *gin.Context) {
+	events, err := c.eventService.GetCarouselEvents()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to fetch carousel events",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "success",
+		"data":    events,
+	})
+}

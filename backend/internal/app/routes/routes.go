@@ -11,6 +11,7 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 	r := router.Group("api/events")
 	{
 		r.GET("/", eventController.GetAllEvents)
+		r.GET("/carousel", eventController.GetCarouselEvents)
 	}
 
 	auth := router.Group("api/events")
