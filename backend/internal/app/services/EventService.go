@@ -16,6 +16,7 @@ type EventService interface {
 	GetAllEvents(category, search string, ageRanges []string) ([]response.EventListResponseDto, error)
 	GetYourCreatedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
 	GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error)
+	GetCarouselEvents() (*response.EventCarouselResponseDto, error)
 }
 
 type eventService struct {
@@ -211,4 +212,18 @@ func (s *eventService) GetEventDetail(eventID uint, userID uint) (*response.Even
 	}
 
 	return event, nil
+}
+
+func (s *eventService) GetCarouselEvents() (*response.EventCarouselResponseDto, error) {
+	data, err := s.eventRepo.GetCarouselEvents()
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.EventCarouselResponseDto{
+		Health:      data["health"],
+		Environment: data["environment"],
+		Education:   data["education"],
+		Community:   data["community"],
+	}, nil
 }

@@ -14,6 +14,7 @@ type EventRepository interface {
    GetAllEvents(category, search string, ageRanges []string) ([]response.EventListResponseDto, error)
    GetYourCreatedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
    GetEventDetailByID(eventID uint) (*response.EventDetailResponseDto, uint, error)
+   GetCarouselEvents() (map[string]*response.EventCarouselItemDto, error)
 }
 
 type eventRepository struct {
@@ -42,8 +43,8 @@ func (r *eventRepository) GetAllEvents(category, search string, ageRanges []stri
 			profiles.name AS host_name
 		`).
 		Joins("JOIN profiles ON profiles.user_id = events.user_id").
-		Where("events.status = ?", "approved").
-		Where("events.sub_status IN ?", []string{"opened", "closed"})
+		Where("events.status = ?", "pending")//.
+		// Where("events.sub_status IN ?", []string{"opened", "closed"})
 		
    if category != "" {
       query = query.Where("LOWER(events.category) = LOWER(?)", category)
@@ -149,7 +150,9 @@ func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetai
 			events.min_age,
 			events.max_age,
 			profiles.name AS host_name,
-			events.user_id
+			events.user_id,
+			events.status,
+			events.sub_status
 		`).
 		Joins("JOIN profiles ON profiles.user_id = events.user_id").
 		Where("events.id = ?", eventID).
@@ -171,4 +174,45 @@ func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetai
 	}
 
 	return &event, hostID, nil
+}
+
+func (r *eventRepository) GetCarouselEvents() (map[string]*response.EventCarouselItemDto, error) {
+	categories := []string{
+		"Health",
+		"Environment",
+		"Education",
+		"Community",
+	}
+
+	result := make(map[string]*response.EventCarouselItemDto)
+
+	for _, category := range categories {
+		var event response.EventCarouselItemDto
+
+		err := r.db.Table("events").
+			Select(`
+				events.id AS event_id,
+				events.title,
+				events.category,
+				events.cover_image
+			`).
+			Where("events.status = ?", "pending").
+			// Where("events.sub_status IN ?", []string{"opened"}).
+			Where("events.category = ?", category).
+			Order("events.start_date DESC").
+			Limit(1).
+			Scan(&event).Error
+
+		if err != nil {
+			return nil, err
+		}
+
+		if event.EventID == 0 {
+			result[strings.ToLower(category)] = nil
+		} else {
+			result[strings.ToLower(category)] = &event
+		}
+	}
+
+	return result, nil
 }
