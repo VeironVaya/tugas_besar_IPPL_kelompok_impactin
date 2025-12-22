@@ -17,11 +17,6 @@ func main() {
 	// Initialize DB
 	db := config.InitDB()
 
-	// === Event wiring ===
-	eventRepo := repositories.NewEventRepository(db)
-	eventSvc := services.NewEventService(eventRepo)
-	eventCtrl := controllers.NewEventController(eventSvc)
-
 	// === User, Skill & Profile wiring ===
 	userRepo := repositories.NewUserRepository(db)
 	profileRepo := repositories.NewProfileRepository(db)
@@ -30,6 +25,11 @@ func main() {
 	userCtrl := controllers.NewUserController(userSvc)
 	profileSvc := services.NewProfileService(profileRepo, userRepo, skillRepo)
 	profileCtrl := controllers.NewProfileController(profileSvc)
+
+	// === Event wiring ===
+	eventRepo := repositories.NewEventRepository(db)
+	eventSvc := services.NewEventService(eventRepo, profileRepo)
+	eventCtrl := controllers.NewEventController(eventSvc, profileSvc)
 
 	// Setup Gin router and routes
 	r := gin.Default()

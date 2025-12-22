@@ -30,6 +30,15 @@ func (r *UserRepository) IsUsernameExists(username string) bool {
 	return count > 0
 }
 
+func (r *UserRepository) IsUsernameExistsExceptUser(username string, userID uint) bool {
+	var count int64
+	r.DB.Model(&models.User{}).
+		Where("username = ? AND id != ?", username, userID).
+		Count(&count)
+
+	return count > 0
+}
+
 func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
     var user models.User
     result := r.DB.Where("username = ?", username).First(&user)
@@ -41,4 +50,16 @@ func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
 
 func (r *UserRepository) UpdateUsername(userID uint, username string) error {
 	return r.DB.Model(&models.User{}).Where("id = ?", userID).Update("username", username).Error
+}
+
+func (r *UserRepository) GetByID(userID uint) (*models.User, error) {
+    var user models.User
+    err := r.DB.First(&user, userID).Error
+    return &user, err
+}
+
+func (r *UserRepository) UpdatePassword(userID uint, hashed string) error {
+    return r.DB.Model(&models.User{}).
+        Where("id = ?", userID).
+        Update("password", hashed).Error
 }

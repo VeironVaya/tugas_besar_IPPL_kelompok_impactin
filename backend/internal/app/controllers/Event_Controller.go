@@ -1,39 +1,137 @@
 package controllers
 
 import (
+	"net/http"
+	"strconv"
+
 	"backend/internal/app/dtos/request"
 	"backend/internal/app/services"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type EventController struct {
-	service *services.EventService
+   eventService services.EventService
+   profileService services.ProfileService
 }
 
-func NewEventController(service *services.EventService) *EventController {
-	return &EventController{service: service}
+func NewEventController(eventService services.EventService, profileService services.ProfileService) *EventController {
+   return &EventController{eventService, profileService}
 }
 
-func (c *EventController) PostEvent(ctx *gin.Context) {
-	var event request.EventRequestDto
-	if err := ctx.ShouldBindJSON(&event); err != nil {
+func (c *EventController) CreateEvent(ctx *gin.Context) {
+   uid, exists := ctx.Get("user_id")
+   if !exists {
+       ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+       return
+   }
+
+   userID := uid.(uint)
+
+   // Ambil profile berdasarkan user_id
+   profile, err := c.profileService.GetByUserID(userID)
+   if err != nil {
+       ctx.JSON(http.StatusBadRequest, gin.H{"error": "profile not found"})
+       return
+   }
+
+   var req request.EventRequestDto
+   if err := ctx.ShouldBindJSON(&req); err != nil {
+       ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+       return
+   }
+
+   resp, err := c.eventService.CreateEvent(profile.UserID, req)
+   if err != nil {
+       ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+       return
+   }
+
+   ctx.JSON(http.StatusCreated, resp)
+}
+
+func (c *EventController) GetAllEvents(ctx *gin.Context) {
+    category := ctx.Query("category")
+    search := ctx.Query("search")
+	ageRanges := ctx.QueryArray("age")
+
+	resp, err := c.eventService.GetAllEvents(category, search, ageRanges)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "events retrieved",
+		"data":    resp,
+	})
+}
+
+func (c *EventController) GetYourCreatedEvents(ctx *gin.Context) {
+	uid, exists := ctx.Get("user_id")
+	status := ctx.Query("status")
+
+    if !exists {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+
+	if status == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "status query is required",
+		})
+		return
+	}
+
+    userID := uid.(uint)
+
+	profile, err := c.profileService.GetByUserID(userID)
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := c.service.PostEvent(&event); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	events, err := c.eventService.GetYourCreatedEvents(profile.UserID, status)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{"message": "Event created successfully", "data": event})
+
+    ctx.JSON(http.StatusOK, gin.H{
+		"message": "events retrieved",
+		"data":    events,
+	})
 }
 
-func (c *EventController) GetEvents(ctx *gin.Context) {
-	events, err := c.service.GetAllEvents()
+func (c *EventController) GetEventDetail(ctx *gin.Context) {
+    uid, exists := ctx.Get("user_id")
+	eventIDParam := ctx.Param("event_id")
+
+    if !exists {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+
+	eventID, err := strconv.Atoi(eventIDParam)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "Data Retrieve Succes", "data": events})
+
+    userID := uid.(uint)
+
+    profile, err := c.profileService.GetByUserID(userID)
+    if err == nil {
+        userID = profile.UserID
+    }
+
+	event, err := c.eventService.GetEventDetail(uint(eventID), userID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, event)
 }
