@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 import EventCard from "../../components/event_card.jsx";
 import HERO_IMAGE from "../../assets/hero news.png";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-import { MapPin, Calendar, Users } from "lucide-react"; 
+
+/* ================= MOCK EVENTS ================= */
 const mockEvents = [
   {
     id: 1,
@@ -13,7 +15,7 @@ const mockEvents = [
     location: "Yogyakarta Indonesia",
     organizer: "Sea Care Indonesia",
     imageUrl: MOCK_CARD_IMAGE,
-    category: "LAUT",
+    category: "Environment",
   },
   {
     id: 2,
@@ -22,7 +24,7 @@ const mockEvents = [
     location: "Bali Indonesia",
     organizer: "CleanSea Org",
     imageUrl: MOCK_CARD_IMAGE,
-    category: "LAUT",
+    category: "Environment",
   },
   {
     id: 3,
@@ -31,7 +33,7 @@ const mockEvents = [
     location: "Jakarta Indonesia",
     organizer: "GreenAction",
     imageUrl: MOCK_CARD_IMAGE,
-    category: "HIJAU",
+    category: "Community",
   },
   {
     id: 4,
@@ -40,78 +42,95 @@ const mockEvents = [
     location: "Lombok Indonesia",
     organizer: "EcoWave",
     imageUrl: MOCK_CARD_IMAGE,
-    category: "EDUKASI",
+    category: "Education",
+  },
+  {
+    id: 5,
+    title: "Public Health Campaign",
+    date: "JAN 20",
+    location: "Bandung Indonesia",
+    organizer: "HealthFirst",
+    imageUrl: MOCK_CARD_IMAGE,
+    category: "Health",
   },
 ];
 
-const topEvents = Array(10)
-  .fill(0)
-  .map((_, i) => mockEvents[i % mockEvents.length]);
-const peduliLautEvents = Array(4)
-  .fill(0)
-  .map((_, i) => mockEvents[i % mockEvents.length]);
+const categories = ["Environment", "Health", "Education", "Community"];
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const [activeCategory, setActiveCategory] = useState("Environment");
+
+  const featuredEvent = mockEvents[0];
+
+  const filteredEvents = mockEvents.filter(
+    (event) => event.category === activeCategory
+  );
+
   return (
     <>
-      <Header />
+      <main className="relative bg-slate-50">
+        <Header />
 
-      <main className="min-h-screen bg-white">
-        {/* Hero Banner */}
+        {/* ================= HERO (AMAN) ================= */}
         <section
-          className="relative h-[80vh] w-full flex items-center bg-cover bg-center"
+          className="relative min-h-screen w-full flex bg-cover bg-center bg-fixed"
           style={{ backgroundImage: `url(${HERO_IMAGE})` }}
         >
-          {/* Overlay */}
           <div className="absolute inset-0 bg-black/40"></div>
-          <div className="relative z-10 max-w-6xl mx-auto w-full px-6 lg:px-16">
-            <div className="text-left">
-              <h1 className="font-inter text-6xl md:text-6xl font-extrabold text-white leading-tight drop-shadow-lg text-left">
-                DeepBlue Movement
-              </h1>
 
-              <p className="font-inter text-lg md:text-2xl font-light text-white/90 mt-3 mb-8 text-left">
-                Protect the Depths, Preserve the Future
-              </p>
+          <div className="relative flex w-full">
+            <div className="max-w-6xl mx-auto px-6 lg:px-16 flex items-center min-h-screen">
+              <div>
+                <h1 className="font-inter text-6xl font-extrabold text-white leading-tight drop-shadow-lg">
+                  DeepBlue Movement
+                </h1>
 
-              <button className="bg-gradient-to-r from-green-700 to-blue-500 px-8 py-3 rounded-full text-sm md:text-base font-semibold text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-transform">
-                Explore Event
-              </button>
+                <p className="font-inter text-lg md:text-2xl font-light text-white/90 mt-3 mb-8">
+                  Protect the Depths, Preserve the Future
+                </p>
+
+                {/* SEE DETAILS → EVENT DETAIL */}
+                <button
+                  onClick={() =>
+                    navigate(`/event/${featuredEvent.id}`)
+                  }
+                  className="bg-gradient-to-r from-green-700 to-blue-500 px-8 py-3 rounded-full
+                             text-sm md:text-base font-semibold text-white shadow-lg
+                             hover:shadow-xl hover:scale-[1.02] transition-transform"
+                >
+                  See Details
+                </button>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Top Event Section */}
-        <section className="w-full py-16">
-          <div className="max-w-7xl mx-auto px-6 lg:px-16">
-            <h2 className="text-gray-900 text-3xl font-extrabold mb-10 border-b-2 border-green-500 pb-2 inline-block">
-              Top Event
-            </h2>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
-              {topEvents.map((event, index) => (
-                <EventCard key={index} {...event} />
+        {/* ================= CATEGORY TABS ================= */}
+        <section className="w-full py-12">
+          <div className="mx-auto px-6 lg:px-16">
+            <div className="flex flex-wrap gap-4 mb-10">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-5 py-2 rounded-full font-semibold text-sm transition
+                    ${
+                      activeCategory === cat
+                        ? "bg-green-700 text-white shadow"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                >
+                  {cat}
+                </button>
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* Peduli Laut Section */}
-        <section className="max-w-7xl mx-auto px-6 lg:px-16 py-16">
-          <h2 className="text-3xl font-extrabold mb-10 flex items-center gap-3 text-gray-900 border-b-2 border-blue-500 pb-2 inline-block">
-            <span className="text-blue-600">🌊</span> Peduli Laut
-          </h2>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
-            {peduliLautEvents.map((event, index) => (
-              <EventCard key={index} {...event} />
-            ))}
-          </div>
-
-          <div className="text-left mt-12">
-            <button className="bg-gradient-to-r from-blue-600 to-teal-400 px-10 py-3 rounded-lg text-lg font-semibold text-white shadow-lg hover:scale-105 transition-transform">
-              Lihat Semua Event Laut
-            </button>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
+              {filteredEvents.map((event) => (
+                <EventCard key={event.id} {...event} />
+              ))}
+            </div>
           </div>
         </section>
       </main>

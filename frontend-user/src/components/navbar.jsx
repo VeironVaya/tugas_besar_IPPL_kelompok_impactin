@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import LOGO from "../assets/impactin_logo.png";
@@ -7,19 +7,22 @@ import { useAuth } from "../context/AuthContext";
 const Header = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [query, setQuery] = useState("");
 
-  const handleProfileClick = () => {
-    if (!user) {
-      navigate("/login");
-    } else {
-      navigate("/profile");
-    }
+  // Handle submit search
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    navigate(`/search?q=${encodeURIComponent(query)}`);
+    setQuery("");
   };
 
   return (
-    <header className="bg-white text-white shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-        <Link to="/home" className="flex items-center">
+    <header className="sticky top-6 z-10 bg-white backdrop-blur-md border-b border-gray-100 m-6 shadow-md rounded-xl ">
+      <div className=" px-6 lg:px-16 py-3 flex items-center justify-between gap-6">
+        {/* Logo */}
+        <Link to="/home" className="flex items-center shrink-0">
           <img
             src={LOGO}
             alt="Impact.in Logo"
@@ -28,25 +31,34 @@ const Header = () => {
         </Link>
 
         {/* Search */}
-        <div className="relative flex items-center bg-[#D9F5E3] rounded-full p-2 w-full max-w-sm mx-6">
-          <Search className="w-5 h-5 text-gray-600 ml-2" />
+        <form
+          onSubmit={handleSearch}
+          className="relative flex items-center bg-emerald-100/70 
+                     rounded-full px-4 py-2 w-full max-w-md 
+                     focus-within:ring-2 focus-within:ring-emerald-400 transition"
+        >
+          <Search className="w-5 h-5 text-gray-600" />
           <input
             type="text"
-            placeholder="Search Event"
-            className="bg-transparent w-full focus:outline-none placeholder-gray-600 text-sm pl-2"
+            placeholder="Search event..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="ml-2 bg-transparent w-full text-sm 
+                       placeholder-gray-600 focus:outline-none"
           />
-        </div>
+        </form>
 
         {/* Navigation */}
-        <nav className="flex items-center space-x-8 text-sm font-bold">
+        <nav className="flex items-center gap-8 text-sm font-semibold shrink-0">
           <NavLink
             to="/your-event"
             className={({ isActive }) =>
-              `
-      transition
-      hover:underline hover:underline-offset-4 hover:text-green-700
-      ${isActive ? "underline underline-offset-4 text-green-700" : "text-black"}
-    `
+              `transition hover:text-emerald-600
+               ${
+                 isActive
+                   ? "text-emerald-700 underline underline-offset-4"
+                   : "text-gray-800"
+               }`
             }
           >
             Your Event
@@ -55,25 +67,27 @@ const Header = () => {
           <NavLink
             to="/create-event"
             className={({ isActive }) =>
-              `
-      transition
-      hover:underline hover:underline-offset-4 hover:text-green-700
-      ${isActive ? "underline underline-offset-4 text-green-700" : "text-black"}
-    `
+              `transition hover:text-emerald-600
+               ${
+                 isActive
+                   ? "text-emerald-700 underline underline-offset-4"
+                   : "text-gray-800"
+               }`
             }
           >
             Create Event
           </NavLink>
 
-          {/* ✅ Profile Logic */}
+          {/* Login / Profile */}
           <NavLink
             to={user ? "/profile" : "/login"}
             className={({ isActive }) =>
-              `hover:text-green-600 transition ${
-                isActive
-                  ? "underline underline-offset-4 text-green-700"
-                  : "text-black"
-              }`
+              `transition hover:text-emerald-600
+               ${
+                 isActive
+                   ? "text-emerald-700 underline underline-offset-4"
+                   : "text-gray-800"
+               }`
             }
           >
             {user ? user.username : "Login"}
