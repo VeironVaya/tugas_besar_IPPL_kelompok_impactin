@@ -17,15 +17,18 @@ type EventService interface {
 	GetYourCreatedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
 	GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error)
 	GetCarouselEvents() (*response.EventCarouselResponseDto, error)
+	JoinEvent(userID, eventID uint) error
+	AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error)
 }
 
 type eventService struct {
 	eventRepo repositories.EventRepository
 	profileRepo repositories.ProfileRepository
+	applicantRepo repositories.ApplicantRepository
 }
 
-func NewEventService(eventRepo repositories.EventRepository, profileRepo repositories.ProfileRepository) EventService {
-	return &eventService{eventRepo, profileRepo}
+func NewEventService(eventRepo repositories.EventRepository, profileRepo repositories.ProfileRepository, applicantRepo repositories.ApplicantRepository) EventService {
+	return &eventService{eventRepo, profileRepo, applicantRepo}
 }
 
 func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (response.EventResponseDto, error) {
@@ -226,4 +229,67 @@ func (s *eventService) GetCarouselEvents() (*response.EventCarouselResponseDto, 
 		Education:   data["education"],
 		Community:   data["community"],
 	}, nil
+}
+
+func (s *eventService) JoinEvent(userID, eventID uint) error {
+	// 1. Event
+	event, err := s.eventRepo.GetEventForJoin(eventID)
+	if err != nil {
+		return errors.New("event not found")
+	}
+
+	// 2. Status
+	if event.Status != "approved" || event.SubStatus != "opened" {
+		return errors.New("event is not open for joining")
+	}
+
+	// 3. Profile
+	profile, err := s.profileRepo.GetByUserID(userID)
+	if err != nil {
+		return errors.New("profile not found")
+	}
+	if *profile.Age <= 0 || profile.Age == nil {
+		return errors.New("profile age must be completed before joining event")
+	}
+	if profile.Name == nil || strings.TrimSpace(*profile.Name) == "" {
+		return errors.New("profile name must be completed before joining event")
+	}
+	if profile.UserID == event.UserID {
+		return errors.New("cannot join your own event")
+	}
+	
+
+	age := *profile.Age
+
+	// 4. Age validation
+	switch {
+	case event.MinAge == 0 && event.MaxAge == 0:
+		// all ages allowed
+	case event.MinAge == 0 && age > event.MaxAge:
+		return errors.New("age exceeds maximum limit")
+	case event.MaxAge == 0 && age < event.MinAge:
+		return errors.New("age does not meet minimum requirement")
+	case age < event.MinAge || age > event.MaxAge:
+		return errors.New("age not within allowed range")
+	}
+
+	// 5. Duplicate join
+	exist, err := s.applicantRepo.IsAlreadyApplicant(userID, eventID)
+	if err != nil {
+		return err
+	}
+	if exist {
+		return errors.New("you already joined this event")
+	}
+
+	// 6. Save
+	applicant := &models.Applicant{
+		UserID:  userID,
+		EventID: eventID,
+	}
+	return s.applicantRepo.Create(applicant)
+}
+
+func (s *eventService) AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error) {
+	return s.eventRepo.AdminGetApprovalEvents(search)
 }

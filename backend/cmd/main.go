@@ -2,6 +2,7 @@ package main
 
 import (
 	"backend/internal/app/controllers"
+	"backend/internal/app/models"
 	"backend/internal/app/repositories"
 	"backend/internal/app/routes"
 	"backend/internal/app/services"
@@ -11,11 +12,14 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func main() {
 	// Initialize DB
 	db := config.InitDB()
+	SeedAdmin(db)
 
 	// === User, Skill & Profile wiring ===
 	userRepo := repositories.NewUserRepository(db)
@@ -26,9 +30,15 @@ func main() {
 	profileSvc := services.NewProfileService(profileRepo, userRepo, skillRepo)
 	profileCtrl := controllers.NewProfileController(profileSvc)
 
+	// === Admin wiring ===
+	adminRepo := repositories.NewAdminRepository(db)
+	adminSvc := services.NewAdminService(adminRepo)
+	adminCtrl := controllers.NewAdminController(adminSvc)
+	
 	// === Event wiring ===
 	eventRepo := repositories.NewEventRepository(db)
-	eventSvc := services.NewEventService(eventRepo, profileRepo)
+	applicantRepo := repositories.NewApplicantRepository(db)
+	eventSvc := services.NewEventService(eventRepo, profileRepo, applicantRepo)
 	eventCtrl := controllers.NewEventController(eventSvc, profileSvc)
 
 	// Setup Gin router and routes
@@ -40,10 +50,40 @@ func main() {
 		eventCtrl,
 		userCtrl,
 		profileCtrl,
+		adminCtrl,
 	)
 
 	// Start server
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("failed to start server: %v", err)
 	}
+}
+
+func SeedAdmin(db *gorm.DB) {
+	var count int64
+	db.Model(&models.Admin{}).Count(&count)
+
+	// Kalau admin sudah ada, jangan insert lagi
+	if count > 0 {
+		return
+	}
+
+	password, err := bcrypt.GenerateFromPassword(
+		[]byte("admin123"),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	admin := models.Admin{
+		Username: "admin",
+		Password: string(password),
+	}
+
+	if err := db.Create(&admin).Error; err != nil {
+		log.Fatal("failed to seed admin:", err)
+	}
+
+	log.Println("✅ Admin seeded successfully")
 }

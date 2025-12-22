@@ -15,6 +15,8 @@ type EventRepository interface {
    GetYourCreatedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
    GetEventDetailByID(eventID uint) (*response.EventDetailResponseDto, uint, error)
    GetCarouselEvents() (map[string]*response.EventCarouselItemDto, error)
+   GetEventForJoin(eventID uint) (*response.EventJoinCheckDto, error)
+   AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error)
 }
 
 type eventRepository struct {
@@ -215,4 +217,56 @@ func (r *eventRepository) GetCarouselEvents() (map[string]*response.EventCarouse
 	}
 
 	return result, nil
+}
+
+func (r *eventRepository) GetEventForJoin(eventID uint) (*response.EventJoinCheckDto, error) {
+	var event response.EventJoinCheckDto
+
+	err := r.db.Table("events").
+		Select(`
+			id AS event_id,
+			user_id,
+			status,
+			sub_status,
+			min_age,
+			max_age
+		`).
+		Where("id = ?", eventID).
+		Scan(&event).Error
+
+	if err != nil {
+		return nil, err
+	}
+	if event.EventID == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return &event, nil
+}
+
+func (r *eventRepository) AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error) {
+	var events []response.AdminEventApprovalResponse
+	var total int64
+
+	query := r.db.Table("events").
+		Where("status = ?", "pending")
+
+	if search != "" {
+		if id, err := strconv.Atoi(search); err == nil {
+			query = query.Where("id = ?", id)
+		} else {
+			query = query.Where("LOWER(title) LIKE LOWER(?)", "%"+search+"%")
+		}
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := query.
+		Select("id AS event_id, title").
+		Order("id ASC").
+		Scan(&events).Error
+
+	return events, total, err
 }

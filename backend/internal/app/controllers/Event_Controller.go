@@ -150,3 +150,45 @@ func (c *EventController) GetCarouselEvents(ctx *gin.Context) {
 		"data":    events,
 	})
 }
+
+func (c *EventController) JoinEvent(ctx *gin.Context) {
+	uid, exists := ctx.Get("user_id")
+	eventIDParam := ctx.Param("event_id")
+
+	if !exists {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+
+	eventID, err := strconv.Atoi(eventIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		return
+	}
+
+	userID := uid.(uint)
+	err = c.eventService.JoinEvent(userID, uint(eventID))
+	if err != nil {
+		ctx.JSON(400, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(200, gin.H{
+		"message": "successfully joined event",
+	})
+}
+
+func (c *EventController) AdminGetApprovalEvents(ctx *gin.Context) {
+	search := ctx.Query("search")
+
+	events, total, err := c.eventService.AdminGetApprovalEvents(search)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"events": events,
+	})
+}
