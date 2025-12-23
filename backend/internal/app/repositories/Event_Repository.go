@@ -42,9 +42,9 @@ func (r *eventRepository) GetAllEvents(category, search string, ageRanges []stri
 			events.cover_image,
 			events.start_date,
 			events.location,
-			profiles.name AS host_name
+			COALESCE(NULLIF(profiles.name, ''), events.host_name) AS host_name
 		`).
-		Joins("JOIN profiles ON profiles.user_id = events.user_id").
+		Joins("LEFT JOIN profiles ON profiles.user_id = events.user_id").
 		Where("events.status = ?", "pending")//.
 		// Where("events.sub_status IN ?", []string{"opened", "closed"})
 		
@@ -59,13 +59,9 @@ func (r *eventRepository) GetAllEvents(category, search string, ageRanges []stri
 			LOWER(events.title) LIKE ? OR
 			LOWER(events.category) LIKE ? OR
 			LOWER(events.location) LIKE ? OR
-			LOWER(profiles.name) LIKE ?
+			LOWER(COALESCE(NULLIF(profiles.name, ''), events.host_name)) LIKE ?
 		)
 		`, keyword, keyword, keyword, keyword)
-
-		if id, err := strconv.Atoi(search); err == nil {
-			query = query.Or("events.id = ?", id)
-		}
 	}
 
 	if len(ageRanges) > 0 {
@@ -76,19 +72,19 @@ func (r *eventRepository) GetAllEvents(category, search string, ageRanges []stri
 			case "<16":
 				ageQuery = ageQuery.Or(`events.min_age < ?`, 16) 
 			case "16-20":
-				ageQuery = ageQuery.Or(`(events.max_age >= ? OR events.max_age >= ?) AND (events.min_age <= ? OR events.min_age <= ?)`, 16, 20, 16, 20)
+				ageQuery = ageQuery.Or(`(events.max_age >= ? OR events.max_age >= ?) AND (events.min_age <= ? OR events.min_age <= ?) OR (events.min_age <= ? AND events.max_age = 0)`, 16, 20, 16, 20, 16)
 			case "21-30":
-				ageQuery = ageQuery.Or(`(events.max_age >= ? OR events.max_age >= ?) AND (events.min_age <= ? OR events.min_age <= ?)`, 21, 30, 21, 30)
+				ageQuery = ageQuery.Or(`(events.max_age >= ? OR events.max_age >= ?) AND (events.min_age <= ? OR events.min_age <= ?) OR (events.min_age <= ? AND events.max_age = 0)`, 21, 30, 21, 30, 21)
 			case "31-45":
-				ageQuery = ageQuery.Or(`(events.max_age >= ? OR events.max_age >= ?) AND (events.min_age <= ? OR events.min_age <= ?)`, 31, 45, 31, 45)
+				ageQuery = ageQuery.Or(`(events.max_age >= ? OR events.max_age >= ?) AND (events.min_age <= ? OR events.min_age <= ?) OR (events.min_age <= ? AND events.max_age = 0)`, 31, 45, 31, 45, 31)
 			case ">45":
-				ageQuery = ageQuery.Or(`events.max_age > ?`, 45)
+				ageQuery = ageQuery.Or(`events.max_age > ? OR events.max_age = 0`, 45)
 			}
 		}
 		query = query.Where(ageQuery)
 	}
 
-   err := query.Order("events.start_date ASC").Scan(&events).Error
+   err := query.Order("events.id ASC").Scan(&events).Error
 
 	return events, err
 }
@@ -103,9 +99,9 @@ func (r *eventRepository) GetYourCreatedEvents(userID uint, status string) ([]re
 			events.start_date,
 			events.location,
 			events.status,
-			profiles.name AS host_name
+			COALESCE(NULLIF(profiles.name, ''), events.host_name) AS host_name
 		`).
-		Joins("JOIN profiles ON profiles.user_id = events.user_id").
+		Joins("LEFT JOIN profiles ON profiles.user_id = events.user_id").
 		Where("events.user_id = ?", userID)
 
 	switch status {
@@ -151,12 +147,12 @@ func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetai
 			events.terms,
 			events.min_age,
 			events.max_age,
-			profiles.name AS host_name,
+			COALESCE(NULLIF(profiles.name, ''), events.host_name) AS host_name,
 			events.user_id,
 			events.status,
 			events.sub_status
 		`).
-		Joins("JOIN profiles ON profiles.user_id = events.user_id").
+		Joins("LEFT JOIN profiles ON profiles.user_id = events.user_id").
 		Where("events.id = ?", eventID).
 		Take(&event)
 

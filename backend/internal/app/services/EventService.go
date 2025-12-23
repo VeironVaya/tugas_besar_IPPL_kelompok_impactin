@@ -17,7 +17,7 @@ type EventService interface {
 	GetYourCreatedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
 	GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error)
 	GetCarouselEvents() (*response.EventCarouselResponseDto, error)
-	JoinEvent(userID, eventID uint) error
+	JoinEvent(userID, eventID uint) (response.JoinEventResponseDto, error)
 	AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error)
 }
 
@@ -94,6 +94,7 @@ func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (re
 
 	event := models.Event{
 		UserID:        	  userID,
+		HostName: 		  *profile.Name,
 		Title:            dto.Title,
 		Category:         dto.Category,
 		Location:         dto.Location,
@@ -121,7 +122,7 @@ func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (re
 
 	return response.EventResponseDto{
 		UserID: 	userID,
-		HostName: 	*profile.Name,
+		HostName: 	event.HostName,
 		EventID:   	event.ID,
 		Title: 	   	event.Title,
 		Category:  	event.Category,
@@ -231,34 +232,33 @@ func (s *eventService) GetCarouselEvents() (*response.EventCarouselResponseDto, 
 	}, nil
 }
 
-func (s *eventService) JoinEvent(userID, eventID uint) error {
+func (s *eventService) JoinEvent(userID, eventID uint) (response.JoinEventResponseDto, error) {
 	// 1. Event
 	event, err := s.eventRepo.GetEventForJoin(eventID)
 	if err != nil {
-		return errors.New("event not found")
+		return response.JoinEventResponseDto{}, errors.New("event not found")
 	}
 
 	// 2. Status
 	if event.Status != "approved" || event.SubStatus != "opened" {
-		return errors.New("event is not open for joining")
+		return response.JoinEventResponseDto{}, errors.New("event is not open for joining")
 	}
 
 	// 3. Profile
 	profile, err := s.profileRepo.GetByUserID(userID)
 	if err != nil {
-		return errors.New("profile not found")
+		return response.JoinEventResponseDto{}, errors.New("profile not found")
 	}
 	if *profile.Age <= 0 || profile.Age == nil {
-		return errors.New("profile age must be completed before joining event")
+		return response.JoinEventResponseDto{}, errors.New("profile age must be completed before joining event")
 	}
 	if profile.Name == nil || strings.TrimSpace(*profile.Name) == "" {
-		return errors.New("profile name must be completed before joining event")
+		return response.JoinEventResponseDto{}, errors.New("profile name must be completed before joining event")
 	}
 	if profile.UserID == event.UserID {
-		return errors.New("cannot join your own event")
+		return response.JoinEventResponseDto{}, errors.New("cannot join your own event")
 	}
 	
-
 	age := *profile.Age
 
 	// 4. Age validation
@@ -266,28 +266,40 @@ func (s *eventService) JoinEvent(userID, eventID uint) error {
 	case event.MinAge == 0 && event.MaxAge == 0:
 		// all ages allowed
 	case event.MinAge == 0 && age > event.MaxAge:
-		return errors.New("age exceeds maximum limit")
+		return response.JoinEventResponseDto{}, errors.New("age exceeds maximum limit")
 	case event.MaxAge == 0 && age < event.MinAge:
-		return errors.New("age does not meet minimum requirement")
+		return response.JoinEventResponseDto{}, errors.New("age does not meet minimum requirement")
 	case age < event.MinAge || age > event.MaxAge:
-		return errors.New("age not within allowed range")
+		return response.JoinEventResponseDto{}, errors.New("age not within allowed range")
 	}
 
 	// 5. Duplicate join
 	exist, err := s.applicantRepo.IsAlreadyApplicant(userID, eventID)
 	if err != nil {
-		return err
+		return response.JoinEventResponseDto{}, err
 	}
 	if exist {
-		return errors.New("you already joined this event")
+		return response.JoinEventResponseDto{}, errors.New("you already joined this event")
 	}
 
 	// 6. Save
 	applicant := &models.Applicant{
-		UserID:  userID,
 		EventID: eventID,
+		UserID:  userID,
+		Name: 	 *profile.Name,
+		Age: 	 *profile.Age,
 	}
-	return s.applicantRepo.Create(applicant)
+	if err := s.applicantRepo.Create(applicant); err != nil {
+		return response.JoinEventResponseDto{}, err
+	}
+
+	return response.JoinEventResponseDto{
+		EventID: applicant.EventID,
+		UserID:  applicant.UserID,
+		Name:	 applicant.Name,
+		Age: 	 applicant.Age,
+		Message: "successfully joined event",
+	}, nil
 }
 
 func (s *eventService) AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error) {
