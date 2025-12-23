@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import LOGO from "../assets/impactin_logo.png";
 import { User } from "lucide-react";
 import LogoutPopUp from "./logout_popup";
@@ -8,6 +8,7 @@ const AdminNavbar = () => {
   const [open, setOpen] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const menuRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -19,15 +20,26 @@ const AdminNavbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleLogoutConfirm = () => {
+    // 🔥 DELETE TOKEN
+    localStorage.removeItem("token");
+
+    // 🔁 CLOSE MODAL
+    setShowLogout(false);
+
+    // 🔁 REDIRECT TO LOGIN
+    navigate("/Login_adm", { replace: true });
+
+    // 🔄 OPTIONAL: RESET ALL STATE (recommended)
+    window.location.reload();
+  };
+
   return (
     <>
       <header className="bg-white shadow-sm w-full">
         <div className="max-w-7xl mx-auto flex justify-between items-center py-4 px-6">
-
-          {/* LEFT — LOGO */}
           <img src={LOGO} alt="Impact.in Logo" className="w-32 object-contain" />
 
-          {/* CENTER — NAV TABS */}
           <div className="flex border border-gray-400 rounded-md overflow-hidden text-sm font-semibold">
             <NavLink to="/approval" className={({ isActive }) =>
               `px-6 py-2 border-r border-gray-400 ${
@@ -54,7 +66,6 @@ const AdminNavbar = () => {
             </NavLink>
           </div>
 
-          {/* RIGHT — ADMIN DROPDOWN */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setOpen(!open)}
@@ -81,14 +92,10 @@ const AdminNavbar = () => {
         </div>
       </header>
 
-      {/* LOGOUT CONFIRMATION POPUP */}
       <LogoutPopUp
         open={showLogout}
         onClose={() => setShowLogout(false)}
-        onConfirm={() => {
-          console.log("logout confirmed");
-          setShowLogout(false);
-        }}
+        onConfirm={handleLogoutConfirm}
       />
     </>
   );

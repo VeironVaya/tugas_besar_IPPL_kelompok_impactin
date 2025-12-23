@@ -10,11 +10,16 @@ const LoginAdmPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    login(username, password);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await login(username, password);
     navigate("/approval");
-  };
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   return (
     <div className="min-h-screen w-full bg-gray-200 flex items-center justify-center">
