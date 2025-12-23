@@ -7,6 +7,7 @@ const EditProfile = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
+    username: "nabilaazh",
     name: "Nabila Azhari",
     age: "20 Tahun",
     location: "Bandung, Indonesia",
@@ -18,7 +19,7 @@ const EditProfile = () => {
 
   const [newSkill, setNewSkill] = useState("");
 
-  /* ===== HANDLE IMAGE UPLOAD (NO FILE CHOSEN) ===== */
+  /* ===== HANDLE IMAGE UPLOAD ===== */
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -56,17 +57,18 @@ const EditProfile = () => {
 
           {/* ===== PHOTO SECTION ===== */}
           <div className="flex flex-col items-center mb-10">
-            {/* AVATAR */}
             <img
               src={formData.avatar}
               alt="avatar"
-              className="w-56 h-56 rounded-full object-cover border-4 border-green-600 shadow-lg mb-4"
+              className="w-56 h-56 rounded-full object-cover
+                         border-4 border-green-600 shadow-lg mb-4"
             />
 
-            {/* CHANGE PHOTO BUTTON */}
             <label
               htmlFor="avatar-upload"
-              className="cursor-pointer px-4 py-2 bg-green-700 text-white rounded-lg text-sm hover:bg-green-800 transition"
+              className="cursor-pointer px-4 py-2
+                         bg-green-700 text-white rounded-lg
+                         text-sm hover:bg-green-800 transition"
             >
               Change Photo
             </label>
@@ -82,6 +84,23 @@ const EditProfile = () => {
 
           {/* ===== FORM ===== */}
           <div className="space-y-5">
+            {/* USERNAME */}
+            <div>
+              <label className="font-semibold">Username</label>
+              <input
+                value={formData.username}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    username: e.target.value.replace(/\s/g, ""),
+                  })
+                }
+                placeholder="username (tanpa spasi)"
+                className="w-full p-2 border rounded mt-1"
+              />
+            </div>
+
+            {/* NAME */}
             <div>
               <label className="font-semibold">Nama</label>
               <input
@@ -93,6 +112,7 @@ const EditProfile = () => {
               />
             </div>
 
+            {/* AGE */}
             <div>
               <label className="font-semibold">Umur</label>
               <input
@@ -104,6 +124,7 @@ const EditProfile = () => {
               />
             </div>
 
+            {/* LOCATION */}
             <div>
               <label className="font-semibold">Lokasi</label>
               <input
@@ -115,6 +136,7 @@ const EditProfile = () => {
               />
             </div>
 
+            {/* STATUS */}
             <div>
               <label className="font-semibold">Status</label>
               <input
@@ -126,6 +148,7 @@ const EditProfile = () => {
               />
             </div>
 
+            {/* BIO */}
             <div>
               <label className="font-semibold">Bio</label>
               <textarea
@@ -137,16 +160,17 @@ const EditProfile = () => {
               />
             </div>
 
-            {/* ===== SKILLS ===== */}
+            {/* SKILLS */}
             <div>
               <label className="font-semibold">Skills</label>
 
-              {/* LIST SKILLS */}
               <div className="flex flex-wrap gap-2 mt-2">
                 {formData.skills.map((skill, i) => (
                   <span
                     key={i}
-                    className="bg-green-100 text-green-700 px-3 py-1 rounded-full flex items-center gap-2"
+                    className="bg-green-100 text-green-700
+                               px-3 py-1 rounded-full
+                               flex items-center gap-2"
                   >
                     {skill}
                     <button
@@ -166,7 +190,6 @@ const EditProfile = () => {
                 ))}
               </div>
 
-              {/* ADD SKILL */}
               <div className="flex gap-2 mt-3">
                 <input
                   type="text"
@@ -185,7 +208,9 @@ const EditProfile = () => {
                       setNewSkill("");
                     }
                   }}
-                  className="px-6 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800"
+                  className="px-6 py-2 bg-green-700
+                             text-white rounded-lg
+                             hover:bg-green-800"
                 >
                   Add
                 </button>
@@ -197,7 +222,9 @@ const EditProfile = () => {
           <div className="mt-10 flex justify-end">
             <button
               onClick={() => navigate("/profile")}
-              className="px-6 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800"
+              className="px-6 py-2 bg-green-700
+                         text-white rounded-lg
+                         hover:bg-green-800"
             >
               Save Changes
             </button>
