@@ -1,7 +1,7 @@
 package response
 
 type EventResponseDto struct {
-	UserID 		uint 	`json:"user_id"`
+	UserID 			uint 	`json:"user_id"`
 	HostName 		string 	`json:"host_name"`
 	EventID 		uint 	`json:"event_id"`
 
@@ -16,6 +16,7 @@ type EventResponseDto struct {
 	StartTime 		string 	`json:"start_time"`
 	EndTime   		string 	`json:"end_time"`
 
+	MaxParticipant	int		`json:"max_participant"`
 	CoverImage		string  `json:"cover_image"`
 	Description 	string 	`json:"description"`
 	Terms       	*string `json:"terms"`

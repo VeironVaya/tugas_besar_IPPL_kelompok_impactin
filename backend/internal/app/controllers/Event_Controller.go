@@ -190,3 +190,27 @@ func (c *EventController) AdminGetApprovalEvents(ctx *gin.Context) {
 		"events": events,
 	})
 }
+
+func (c *EventController) AdminGetApprovalEventDetail(ctx *gin.Context) {
+
+	// pastikan admin auth sudah jalan
+	if _, exists := ctx.Get("admin_id"); !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	eventIDParam := ctx.Param("event_id")
+	eventID, err := strconv.Atoi(eventIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		return
+	}
+
+	resp, err := c.eventService.AdminGetApprovalEventDetail(uint(eventID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
