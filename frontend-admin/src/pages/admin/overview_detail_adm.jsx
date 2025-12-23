@@ -10,8 +10,10 @@ const sampleEvents = [
     id: "1",
     status: "accepted",
     title: "BlueWave Coastal Restoration",
+    host: "ipan",
     category: "Konservasi Laut",
     location: "Makassar, Indonesia",
+    specific: "pantai",
     address: "Pantai Losari – Area Konservasi",
     addressUrl: "https://maps.app.goo.gl/xt92B3t7DsL9as8A7",
     startDate: "10 Januari 2026",
@@ -28,7 +30,7 @@ const sampleEvents = [
 4. Dilarang membawa atau membuang sampah plastik sekali pakai selama acara.
 5. Dokumentasi kegiatan dapat digunakan untuk publikasi oleh penyelenggara.`,
     minAge: 18,
-    maxAge: "-",
+    maxAge: "0",
     groupLink: "https://chat.whatsapp.com/AbCdEfG123456",
   },
 
@@ -36,8 +38,10 @@ const sampleEvents = [
     id: "2",
     status: "not accepted",
     title: "Urban Forest Revival",
+    host: "pei",
     category: "Reboisasi Perkotaan",
     location: "Surabaya, Indonesia",
+    specific: "hotel",
     address: "Hutan Kota Pakuwon",
     addressUrl: "https://maps.app.goo.gl/s71kL3v5Fg8HkPyT6",
     startDate: "25 Februari 2026",
@@ -68,7 +72,7 @@ Kami percaya bahwa perubahan di kota besar hanya dapat tercipta melalui tindakan
 10. Jika terjadi hujan lebat, kondisi cuaca ekstrem, atau keadaan darurat lainnya, panitia berhak menunda, mengubah jadwal, atau menghentikan kegiatan demi keselamatan seluruh peserta.`,
 
     minAge: 16,
-    maxAge: "-",
+    maxAge: "0",
     groupLink: "https://chat.whatsapp.com/HjKlMnP987654",
   }
 ];
@@ -103,10 +107,29 @@ const OverviewDetailPage = () => {
           {/* Title */}
           <Field label="Event Title">{event.title}</Field>
 
-          {/* Category + Location */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Event Category">{event.category}</Field>
+          {/* Host */}
+          <Field label="Event Host">{event.host}</Field>
+
+          {/* Category */}
+          <Field label="Event Category">{event.category}</Field>
+
+          {/* Location + Specific Location */}
             <Field label="Location">{event.location}</Field>
+            <Field label="Specific Location">{event.specific}</Field>
+
+          {/* Group Link */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Address URL</label>
+            <div className="border rounded-md px-3 py-2 bg-gray-100">
+              <a
+                href={event.addressUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="underline break-all text-sm"
+              >
+                {event.addressUrl}
+              </a>
+            </div>
           </div>
 
           {/* Dates & Times */}
