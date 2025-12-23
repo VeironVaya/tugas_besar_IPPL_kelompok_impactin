@@ -9,6 +9,8 @@ import (
 	"backend/internal/app/dtos/response"
 	"backend/internal/app/models"
 	"backend/internal/app/repositories"
+
+	"gorm.io/gorm"
 )
 
 type EventService interface {
@@ -19,6 +21,7 @@ type EventService interface {
 	GetCarouselEvents() (*response.EventCarouselResponseDto, error)
 	JoinEvent(userID, eventID uint) (response.JoinEventResponseDto, error)
 	AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error)
+	AdminGetApprovalEventDetail(eventID uint) (response.EventResponseDto, error)
 }
 
 type eventService struct {
@@ -133,6 +136,7 @@ func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (re
 		EndDate:   	event.EndDate.Format("2006-01-02"),
 		StartTime: event.StartTime,
 		EndTime: event.EndTime,
+		MaxParticipant: event.MaxParticipant,
 		CoverImage: event.CoverImage,
 		Description: event.Description,
 		Terms: event.Terms,
@@ -304,4 +308,19 @@ func (s *eventService) JoinEvent(userID, eventID uint) (response.JoinEventRespon
 
 func (s *eventService) AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error) {
 	return s.eventRepo.AdminGetApprovalEvents(search)
+}
+
+func (s *eventService) AdminGetApprovalEventDetail(eventID uint) (response.EventResponseDto, error) {
+
+	event, err := s.eventRepo.AdminGetApprovalEventDetail(eventID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return response.EventResponseDto{}, errors.New("pending event not found")
+		}
+		return response.EventResponseDto{}, err
+	}
+
+	event.Message = "success"
+
+	return *event, nil
 }

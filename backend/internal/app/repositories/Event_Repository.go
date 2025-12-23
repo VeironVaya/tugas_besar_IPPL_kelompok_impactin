@@ -17,6 +17,7 @@ type EventRepository interface {
    GetCarouselEvents() (map[string]*response.EventCarouselItemDto, error)
    GetEventForJoin(eventID uint) (*response.EventJoinCheckDto, error)
    AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error)
+   AdminGetApprovalEventDetail(eventID uint) (*response.EventResponseDto, error)
 }
 
 type eventRepository struct {
@@ -265,4 +266,46 @@ func (r *eventRepository) AdminGetApprovalEvents(search string) ([]response.Admi
 		Scan(&events).Error
 
 	return events, total, err
+}
+
+func (r *eventRepository) AdminGetApprovalEventDetail(eventID uint) (*response.EventResponseDto, error) {
+	var event response.EventResponseDto
+
+	err := r.db.Table("events").
+		Select(`
+			COALESCE(NULLIF(profiles.name, ''), events.host_name) AS host_name,
+			events.user_id,
+			events.id AS event_id,
+			events.title,
+			events.category,
+			events.location,
+			events.specific_address,
+			events.address_link,
+			events.start_date,
+			events.end_date,
+			events.start_time,
+			events.end_time,
+			events.max_participant,
+			events.cover_image,
+			events.description,
+			events.terms,
+			events.min_age,
+			events.max_age,
+			events.group_link,
+			events.status
+		`).
+		Joins("LEFT JOIN profiles ON profiles.user_id = events.user_id").
+		Where("events.id = ?", eventID).
+		Where("events.status = ?", "pending").
+		Scan(&event).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	if event.EventID == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return &event, nil
 }
