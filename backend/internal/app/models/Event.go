@@ -4,7 +4,8 @@ import "time"
 
 type Event struct {
 	ID 					uint `gorm:"primaryKey"`
-	UserID 			uint `gorm:"not null"` // creator (host)
+	UserID 				uint `gorm:"not null"` // creator (host)
+	HostName			string `gorm:"not null"`
 	Title           	string `gorm:"not null"`
 	Category        	string `gorm:"not null"`
 	Location        	string `gorm:"not null"`
