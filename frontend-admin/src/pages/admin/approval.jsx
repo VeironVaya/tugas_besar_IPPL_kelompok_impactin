@@ -6,7 +6,6 @@ import MOCK_CARD_IMAGE from "../../assets/hero news.png";
 
 const sampleEvents = [
   { id: "1", title: "DeepBlue Movement" },
-  { id: "2", title: "GreenCity Tree Planting Day" },
 ];
 
 const ApprovalPage = () => {

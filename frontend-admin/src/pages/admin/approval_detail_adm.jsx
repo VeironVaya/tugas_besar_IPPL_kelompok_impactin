@@ -1,14 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import AdminNavbar from "../../components/navbar_adm";
 import { useParams } from "react-router-dom";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
+
+
 
 const sampleEvents = [
   {
       id: "1",
       title: "DeepBlue Movement",
+      host: "ipan",
       category: "Ekosistem Laut",
       location: "Yogyakarta, Indonesia",
+      specific: "The Legend of Blue Sea",
       address: "The Legend of Blue Sea",
       addressUrl: "https://maps.app.goo.gl/srGVs65T4DmvcwPV8",
       startDate: "18 September 2025",
@@ -18,47 +22,11 @@ const sampleEvents = [
       maxParticipant: 100,
       coverFileName: MOCK_CARD_IMAGE,
       description: "The DeepBlue Movement is a collective call to action aimed at maintaining the health and sustainability of Indonesia's marine ecosystems. This event invites all volunteers, divers, communities, and concerned individuals to get directly involved in conservation efforts across our coastal and aquatic areas.",
-      terms: `1. Usia Minimum: Peserta harus berusia minimal 17 tahun...`,
+      terms: `bisa berenang`,
       minAge: 17,
-      maxAge: "-",
+      maxAge: 0,
       groupLink: "https://chat.whatsapp.com/DmGBacX2CPNYRU?mode=wwc",
-    },
-    {
-        id: "2",
-        title: "GreenCity Tree Planting Day",
-        category: "Lingkungan & Reboisasi",
-        location: "Bandung, Indonesia",
-        address: "Taman Hutan Kota Babakan Siliwangi",
-        addressUrl: "https://maps.app.goo.gl/7bUo7Hh6k5w2VJ8x5",
-        startDate: "12 Oktober 2025",
-        endDate: "12 Oktober 2025",
-        startTime: "07.30",
-        endTime: "13.00",
-        maxParticipant: 150,
-        coverFileName: MOCK_CARD_IMAGE,
-        description: `GreenCity Tree Planting Day adalah program kolaboratif yang bertujuan untuk meningkatkan kesadaran masyarakat terhadap pentingnya ruang hijau di wilayah perkotaan.
-        Acara ini hadir sebagai respon atas semakin menurunnya kualitas udara dan meningkatnya kebutuhan terhadap lingkungan yang berkelanjutan. Melalui kegiatan penanaman pohon, edukasi lingkungan, serta kolaborasi berbagai komunitas, acara ini mendorong partisipasi aktif masyarakat dalam menjaga bumi.
-
-        Peserta akan dibagi ke dalam beberapa kelompok dan setiap kelompok akan bertanggung jawab atas area penanaman tertentu. Selain kegiatan penanaman,
-        akan ada sesi diskusi singkat bersama ahli lingkungan mengenai dampak perubahan iklim, praktik reboisasi yang tepat, serta langkah-langkah kecil yang bisa dilakukan setiap individu dalam kehidupan sehari-hari.
-
-        Kami percaya bahwa perubahan besar dimulai dari langkah-langkah kecil dan nyata. Dengan berpartisipasi dalam kegiatan ini, Anda berperan langsung dalam
-        menciptakan masa depan yang lebih hijau untuk kota dan generasi berikutnya. Yuk, ikut bersama ratusan relawan yang telah berkomitmen untuk menjadikan kota kita lebih baik!`,
-        terms: `1. Kepesertaan terbuka untuk masyarakat umum dan tidak dipungut biaya.
-        2. Peserta diwajibkan melakukan registrasi melalui formulir online dan memastikan kehadiran pada hari kegiatan.
-        3. Peserta harus mengikuti briefing keselamatan mengenai prosedur penanaman dan pembagian peralatan.
-        4. Menggunakan pakaian yang nyaman dan sesuai untuk kegiatan lapangan (disarankan memakai sepatu tertutup, topi, dan sarung tangan).
-        5. Peserta dilarang merusak fasilitas umum dan wajib menjaga kebersihan area sebelum, selama, dan setelah kegiatan berlangsung.
-        6. Menggunakan botol minum pribadi dan diharapkan menghindari penggunaan plastik sekali pakai.
-        7. Peserta wajib mengikuti instruksi dari koordinator lapangan, mulai dari pembagian bibit, metode penanaman, hingga penataan kembali area yang sudah digunakan.
-        8. Dilarang membawa atau mengonsumsi alkohol, obat terlarang, atau melakukan tindakan yang mengganggu ketertiban umum selama acara.
-        9. Dokumentasi acara berupa foto dan video dapat digunakan untuk kepentingan publikasi kegiatan dan kampanye lingkungan oleh penyelenggara.
-        10. Jika terjadi kondisi cuaca ekstrem atau keadaan darurat, penyelenggara berhak mengubah jadwal atau menghentikan kegiatan demi keamanan seluruh peserta.`,
-
-        minAge: 15,
-        maxAge: "-",
-        groupLink: "https://chat.whatsapp.com/KfJbdC23PLNTY4?mode=join"
-  }
+    }
 ];
 
 const Field = ({ label, children }) => (
@@ -71,6 +39,25 @@ const Field = ({ label, children }) => (
 );
 
 const ApprovalDetailPage = () => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [actionType, setActionType] = useState(""); // "accept" | "reject"
+
+  const openConfirm = (type) => {
+    setActionType(type);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = () => {
+    if (actionType === "accept") {
+      console.log("Event accepted:", event.id);
+      // TODO: API accept logic
+    } else {
+      console.log("Event rejected:", event.id);
+      // TODO: API reject logic
+    }
+    setConfirmOpen(false);
+  };
+
   const { id } = useParams();
   const event = sampleEvents.find((e) => e.id === String(id));
 
@@ -90,10 +77,29 @@ const ApprovalDetailPage = () => {
           {/* Title */}
           <Field label="Event Title">{event.title}</Field>
 
-          {/* Category + Location */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Event Category">{event.category}</Field>
+          {/* Host */}
+          <Field label="Event Host">{event.host}</Field>
+
+          {/* Category */}
+          <Field label="Event Category">{event.category}</Field>
+
+          {/* Location + Specific Location */}
             <Field label="Location">{event.location}</Field>
+            <Field label="Specific Location">{event.specific}</Field>
+
+          {/* Group Link */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Address URL</label>
+            <div className="border rounded-md px-3 py-2 bg-gray-100">
+              <a
+                href={event.addressUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="underline break-all text-sm"
+              >
+                {event.addressUrl}
+              </a>
+            </div>
           </div>
 
           {/* Dates & Times */}
@@ -120,7 +126,7 @@ const ApprovalDetailPage = () => {
                   rel="noreferrer noopener"
                   className="underline text-blue-600 text-sm"
                 >
-                  {event.coverFileName}
+                  click to preview image
                 </a>
               </div>
             </div>
@@ -165,10 +171,57 @@ const ApprovalDetailPage = () => {
 
           {/* Buttons */}
           <div className="flex justify-end gap-3 pt-2">
-            <button className="px-6 py-2 rounded bg-green-600 text-white">Accept</button>
-            <button className="px-6 py-2 rounded bg-red-600 text-white">Reject</button>
-          </div>
+            <button
+              onClick={() => openConfirm("accept")}
+              className="px-6 py-2 rounded bg-green-600 text-white"
+            >
+              Accept
+            </button>
 
+            <button
+              onClick={() => openConfirm("reject")}
+              className="px-6 py-2 rounded bg-red-600 text-white"
+            >
+              Reject
+            </button>
+          </div>
+          {confirmOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-lg">
+              <h3 className="text-lg font-semibold mb-3">
+                Confirm {actionType === "accept" ? "Acceptance" : "Rejection"}
+              </h3>
+
+              <p className="text-sm text-gray-600 mb-6">
+                Are you sure you want to{" "}
+                <span className="font-semibold">
+                  {actionType === "accept" ? "accept" : "reject"}
+                </span>{" "}
+                this event?
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmOpen(false)}
+                  className="px-4 py-2 rounded border text-gray-700"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleConfirm}
+                  className={`px-4 py-2 rounded text-white ${
+                    actionType === "accept"
+                      ? "bg-green-600"
+                      : "bg-red-600"
+                  }`}
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </div>
