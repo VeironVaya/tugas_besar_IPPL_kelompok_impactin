@@ -43,13 +43,14 @@ const AppRouter = () => {
       =============================== */}
       {/* Event Detail (User harus login) */}
       <Route
-        path="/event/:slug"
+        path="/event/:id"
         element={
           <ProtectedRoute>
             <EventDetailPage />
           </ProtectedRoute>
         }
       />
+
       {/* Your Event (Join/Create event list) */}
       <Route
         path="/your-event"

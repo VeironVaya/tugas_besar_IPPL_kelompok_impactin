@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api", // SESUAI BE
+  baseURL: "/api", // ⬅️ PAKAI PROXY VITE
   headers: {
     "Content-Type": "application/json",
   },

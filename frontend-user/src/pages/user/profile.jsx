@@ -1,34 +1,47 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
 import avatarImg from "../../assets/photo avatar of user profile.png";
+import { getProfileAPI } from "../../api/profile";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
 
-  /* ================= USER ================= */
-  const user = {
-    name: "Nabila Azhari",
-    role: "Student",
-    age: "20 Tahun",
-    location: "Bandung, Indonesia",
-    bio: "Saya adalah pecinta alam garis keras yang percaya bahwa Bumi butuh lebih banyak cinta dan aksi nyata!",
-    skills: [
-      "UI Design",
-      "Communication",
-      "Video Editing",
-      "Leadership",
-      "Photography",
-      "Problem Solving",
-    ],
-  };
+  /* ================= PROFILE FROM API ================= */
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getProfileAPI();
+
+        setProfile({
+          name: res.name,
+          username: res.username,
+          role: res.status || "User",
+          age: res.age ? `${res.age} Tahun` : "-",
+          location: res.city || "-",
+          bio: res.bio || "Belum ada bio.",
+          skills: res.skills || [],
+          image: res.image_url || avatarImg,
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   /* ================= TAB ================= */
   const [tab, setTab] = useState("experience");
 
-  /* ================= EXPERIENCE ================= */
+  /* ================= EXPERIENCE (DUMMY – TETAP) ================= */
   const [experienceList, setExperienceList] = useState([
     {
       id: 1,
@@ -128,17 +141,16 @@ const ProfilePage = () => {
     }
   };
 
-  /* ================= LOGOUT MODAL ================= */
+  /* ================= LOGOUT ================= */
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // optional
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
-  /* ================= CHANGE PASSWORD MODAL ================= */
+  /* ================= CHANGE PASSWORD ================= */
   const [showChangePwModal, setShowChangePwModal] = useState(false);
-
   const [passwordForm, setPasswordForm] = useState({
     current: "",
     newPw: "",
@@ -165,6 +177,19 @@ const ProfilePage = () => {
     setPasswordForm({ current: "", newPw: "", confirm: "" });
   };
 
+  /* ================= LOADING ================= */
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen flex items-center justify-center">
+          Loading profile...
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
@@ -174,28 +199,30 @@ const ProfilePage = () => {
           {/* ================= PROFILE HEADER ================= */}
           <div className="bg-gradient-to-r from-green-200 to-green-100 p-10 rounded-xl shadow-md flex items-center gap-8">
             <img
-              src={avatarImg}
+              src={profile.image}
               alt="Profile"
               className="w-32 h-32 rounded-full object-cover"
             />
 
             <div>
               <h1 className="text-3xl font-bold text-green-800">
-                {user.name}
+                {profile.name}
               </h1>
 
               <div className="flex flex-wrap gap-2 mt-2 text-sm">
-                {[user.role, user.age, user.location].map((item, i) => (
-                  <span
-                    key={i}
-                    className="bg-green-700 text-white px-3 py-1 rounded-full"
-                  >
-                    {item}
-                  </span>
-                ))}
+                {[profile.role, profile.age, profile.location].map(
+                  (item, i) => (
+                    <span
+                      key={i}
+                      className="bg-green-700 text-white px-3 py-1 rounded-full"
+                    >
+                      {item}
+                    </span>
+                  )
+                )}
               </div>
 
-              <p className="mt-4 italic text-green-900">{user.bio}</p>
+              <p className="mt-4 italic text-green-900">{profile.bio}</p>
             </div>
 
             <button
@@ -213,14 +240,18 @@ const ProfilePage = () => {
               <div>
                 <h2 className="font-bold text-green-800 mb-3">Skills</h2>
                 <div className="flex flex-wrap gap-2">
-                  {user.skills.map((s, i) => (
-                    <span
-                      key={i}
-                      className="bg-green-100 text-green-700 px-3 py-1 text-sm rounded-full"
-                    >
-                      {s}
-                    </span>
-                  ))}
+                  {profile.skills.length > 0 ? (
+                    profile.skills.map((s, i) => (
+                      <span
+                        key={i}
+                        className="bg-green-100 text-green-700 px-3 py-1 text-sm rounded-full"
+                      >
+                        {s}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400">No skills added</p>
+                  )}
                 </div>
               </div>
 
@@ -245,7 +276,6 @@ const ProfilePage = () => {
 
             {/* RIGHT */}
             <div className="lg:col-span-3 bg-white p-6 rounded-xl shadow">
-              {/* Tabs */}
               <div className="flex border-b mb-5">
                 <button
                   onClick={() => setTab("experience")}
@@ -313,9 +343,7 @@ const ProfilePage = () => {
                             Edit
                           </button>
                           <button
-                            onClick={() =>
-                              handleDeleteExperience(e.id)
-                            }
+                            onClick={() => handleDeleteExperience(e.id)}
                             className="px-3 py-1 bg-red-500 text-white rounded"
                           >
                             Delete
@@ -337,169 +365,6 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
-
-      {/* ================= EXPERIENCE MODAL ================= */}
-      {showExpModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-lg p-6 rounded-xl">
-            <h2 className="text-xl font-bold mb-4 text-green-800">
-              {editingId ? "Edit Experience" : "Add Experience"}
-            </h2>
-
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Judul Event"
-                className="w-full p-2 border rounded"
-                value={expForm.title}
-                onChange={(e) =>
-                  setExpForm({ ...expForm, title: e.target.value })
-                }
-              />
-
-              <input
-                type="text"
-                placeholder="Penyelenggara"
-                className="w-full p-2 border rounded"
-                value={expForm.organizer}
-                onChange={(e) =>
-                  setExpForm({
-                    ...expForm,
-                    organizer: e.target.value,
-                  })
-                }
-              />
-
-              <input
-                type="text"
-                placeholder="Tanggal (e.g. April 2025)"
-                className="w-full p-2 border rounded"
-                value={expForm.date}
-                onChange={(e) =>
-                  setExpForm({ ...expForm, date: e.target.value })
-                }
-              />
-
-              <input type="file" onChange={handleCoverUpload} />
-
-              {expForm.coverPreview && (
-                <img
-                  src={expForm.coverPreview}
-                  alt="preview"
-                  className="w-full h-40 object-cover rounded"
-                />
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowExpModal(false)}
-                className="px-4 py-2 border rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveExperience}
-                className="px-4 py-2 bg-green-700 text-white rounded"
-              >
-                {editingId ? "Save Changes" : "Add"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= LOGOUT MODAL ================= */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-xl text-center w-full max-w-md">
-            <h2 className="font-bold text-lg mb-6">
-              Are you sure to log out?
-            </h2>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="px-6 py-2 bg-gray-200 rounded"
-              >
-                NO
-              </button>
-              <button
-                onClick={handleLogout}
-                className="px-6 py-2 bg-green-700 text-white rounded"
-              >
-                YES
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= CHANGE PASSWORD MODAL ================= */}
-      {showChangePwModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-xl w-full max-w-lg">
-            <h2 className="text-xl font-bold text-center mb-8 text-green-800 ">
-              Change your password
-            </h2>
-
-            <div className="space-y-4">
-              <input
-                type="password"
-                placeholder="Current Password"
-                className="w-full p-2 border rounded"
-                value={passwordForm.current}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    current: e.target.value,
-                  })
-                }
-              />
-
-              <input
-                type="password"
-                placeholder="New Password"
-                className="w-full p-2 border rounded"
-                value={passwordForm.newPw}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    newPw: e.target.value,
-                  })
-                }
-              />
-
-              <input
-                type="password"
-                placeholder="Confirm New Password"
-                className="w-full p-2 border rounded"
-                value={passwordForm.confirm}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    confirm: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div className="flex justify-between mt-6">
-              <button
-                onClick={() => setShowChangePwModal(false)}
-                className="px-6 py-2 border rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleChangePassword}
-                className="px-6 py-2 bg-green-700 text-white rounded"
-              >
-                Change Password
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Footer />
     </>

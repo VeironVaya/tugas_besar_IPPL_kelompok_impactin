@@ -1,6 +1,11 @@
 import { useState } from "react";
 import Header from "../../components/navbar";
 import Footer from "../../components/footer.jsx";
+import { createEventAPI } from "../../api/event";
+import { useNavigate } from "react-router-dom";
+import { uploadImageToCloudinary } from "../../api/cloudinary";
+
+
 
 export default function CreateEvent() {
   const [formData, setFormData] = useState({
@@ -32,12 +37,48 @@ export default function CreateEvent() {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Event form data:", formData);
+  const navigate = useNavigate();
 
-    alert("Event created successfully!");
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    let imageUrl = "https://example.com/default.jpg";
+
+    if (formData.coverImage) {
+      imageUrl = await uploadImageToCloudinary(formData.coverImage);
+    }
+
+    const payload = {
+      title: formData.title,
+      category: formData.category,
+      location: formData.location,
+      specific_address: formData.address,
+      address_link: formData.addressLink,
+      start_date: formData.startDate,
+      end_date: formData.endDate,
+      start_time: formData.startTime,
+      end_time: formData.endTime,
+      max_participant: Number(formData.maxParticipant),
+      cover_image: imageUrl, // 🔥 URL dari Cloudinary
+      description: formData.description,
+      terms: formData.terms,
+      min_age: Number(formData.minAge),
+      max_age: Number(formData.maxAge),
+      group_link: formData.groupLink,
+    };
+
+    await createEventAPI(payload);
+
+    alert("Event created successfully 🎉");
+    navigate("/your-event");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to create event");
+  }
+};
+
+
 
   return (
     <>
