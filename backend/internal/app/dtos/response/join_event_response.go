@@ -1,7 +1,11 @@
 package response
 
 type JoinEventResponseDto struct {
-	Message string `json:"message"`
+	EventID uint 	`json:"event_id"`
+	UserID 	uint 	`json:"user_id"`
+	Name	string 	`json:"name"`
+	Age		int 	`json:"age"`
+	Message string 	`json:"message"`
 }
 
 type EventJoinCheckDto struct {

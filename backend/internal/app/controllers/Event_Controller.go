@@ -167,15 +167,13 @@ func (c *EventController) JoinEvent(ctx *gin.Context) {
 	}
 
 	userID := uid.(uint)
-	err = c.eventService.JoinEvent(userID, uint(eventID))
+	resp, err := c.eventService.JoinEvent(userID, uint(eventID))
 	if err != nil {
-		ctx.JSON(400, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	ctx.JSON(200, gin.H{
-		"message": "successfully joined event",
-	})
+	ctx.JSON(http.StatusOK, resp)
 }
 
 func (c *EventController) AdminGetApprovalEvents(ctx *gin.Context) {
