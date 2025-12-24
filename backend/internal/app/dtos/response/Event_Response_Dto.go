@@ -27,5 +27,6 @@ type EventResponseDto struct {
 	GroupLink 		string 	`json:"group_link"`
 
 	Status			string 	`json:"status"`
+	SubStatus		string	`json:"sub_status"`
 	Message 		string 	`json:"message"`
 }

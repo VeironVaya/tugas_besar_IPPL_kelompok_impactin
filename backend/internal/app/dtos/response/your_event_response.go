@@ -6,5 +6,6 @@ type YourEventResponseDto struct {
 	StartDate string `json:"start_date"`
 	Location  string `json:"location"`
 	Status	  string `json:"status"`
+	SubStatus string `json:"sub_status"`
 	HostName  string `json:"host_name"`
 }
