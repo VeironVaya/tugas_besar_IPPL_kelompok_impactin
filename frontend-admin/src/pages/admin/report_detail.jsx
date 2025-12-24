@@ -17,7 +17,7 @@ const sampleReports = [
   },
   {
     id: "2",
-    reporter: "Vei",
+    reporter: "Veiron",
     date: "17/10/2025",
     eventId: "10337320",
     eventName: "DeepBlue Movement",
@@ -43,6 +43,8 @@ const ReportDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const report = sampleReports.find((r) => r.id === String(id));
+  const MAX_NOTES = 500;
+  const WARNING_THRESHOLD = 490;
 
   const isResolved = report?.status === "resolved";
 
@@ -89,11 +91,19 @@ const ReportDetailPage = () => {
             </label>
             <textarea
               readOnly={isResolved}
-              className="w-full min-h-[150px] border rounded-md p-3 focus:outline-none bg-white-100"
+              maxLength={MAX_NOTES}
+              className={`w-full min-h-[150px] border rounded-md p-3 focus:outline-none bg-white
+                ${adminNotes.length >= WARNING_THRESHOLD ? "border-red-500" : "border-gray-300"}
+              `}
               placeholder="please fill your notes here"
               value={adminNotes}
               onChange={(e) => setAdminNotes(e.target.value)}
             />
+            {adminNotes.length >= WARNING_THRESHOLD && (
+            <div className="text-right text-xs text-red-600 mt-1">
+              {adminNotes.length}/{MAX_NOTES} characters
+            </div>
+          )}
           </div>
 
           {/* buttons / resolved info */}

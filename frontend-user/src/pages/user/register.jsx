@@ -3,18 +3,18 @@ import { useState } from "react";
 import { Mail, User, Lock } from "lucide-react";
 import LOGO from "../../assets/impactin_logo.png";
 import BGLOGIN from "../../assets/bg login.png";
-import { useAuth } from "../../context/AuthContext"; // ⬅ TAMBAH INI
+import { useAuth } from "../../context/AuthContext";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const { setUser } = useAuth(); // ⬅ TAMBAH INI
+  const { register } = useAuth();
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
     if (password !== confirmPass) {
@@ -22,15 +22,18 @@ const RegisterPage = () => {
       return;
     }
 
-    // ⬅ SIMPAN di localStorage
-    localStorage.setItem("username", username);
+    try {
+      await register({
+        email,
+        username,
+        password,
+      });
 
-    // ⬅ UPDATE AuthContext agar navbar langsung berubah
-    setUser({ username });
-
-    alert("Register berhasil! 😄");
-
-    navigate("/home");
+      alert("Register berhasil! Silakan login 😊");
+      navigate("/login");
+    } catch (err) {
+      alert(err.response?.data?.message || "Register gagal");
+    }
   };
 
   return (
@@ -40,14 +43,14 @@ const RegisterPage = () => {
     >
       <div className="absolute inset-0 bg-black/30"></div>
 
-      {/* Left Side */}
+      {/* Left Text */}
       <div className="relative z-10 text-white font-extrabold text-6xl max-w-lg ml-20 leading-tight">
         <p>Enter Into</p>
         <p>The Nature</p>
         <p>World</p>
       </div>
 
-      {/* Right Form */}
+      {/* Form */}
       <div className="relative z-10 w-full max-w-lg bg-white/10 backdrop-blur-lg rounded-3xl p-10 mx-20 shadow-2xl">
         <div className="w-full flex justify-center mb-2">
           <img src={LOGO} alt="logo" className="w-40" />

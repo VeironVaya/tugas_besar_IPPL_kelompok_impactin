@@ -1,38 +1,122 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/navbar";
 import avatarImg from "../../assets/photo avatar of user profile.png";
+import { getProfileAPI, updateProfileAPI } from "../../api/profile";
+
+/* ================= CLOUDINARY CONFIG ================= */
+// nanti ganti sesuai akunmu
+const CLOUD_NAME = "YOUR_CLOUD_NAME";
+const UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
 
 const EditProfile = () => {
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(true);
+
   const [formData, setFormData] = useState({
-    username: "nabilaazh",
-    name: "Nabila Azhari",
-    age: "20 Tahun",
-    location: "Bandung, Indonesia",
-    status: "Student",
-    bio: "Saya adalah pecinta alam garis keras...",
-    skills: ["UI Design", "Communication", "Photography"],
+    username: "",
+    name: "",
+    age: "",
+    location: "",
+    status: "",
+    bio: "",
+    skills: [],
     avatar: avatarImg,
   });
 
   const [newSkill, setNewSkill] = useState("");
 
-  /* ===== HANDLE IMAGE UPLOAD ===== */
-  const handleImageUpload = (e) => {
+  /* ================= FETCH PROFILE ================= */
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getProfileAPI();
+
+        setFormData({
+          username: res.username || "",
+          name: res.name || "",
+          age: res.age || "",
+          location: res.city || "",
+          status: res.status || "",
+          bio: res.bio || "",
+          skills: res.skills || [],
+          avatar: res.image_url || avatarImg,
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  /* ================= IMAGE UPLOAD (CLOUDINARY) ================= */
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setFormData({
-        ...formData,
-        avatar: event.target.result,
-      });
-    };
-    reader.readAsDataURL(file);
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", UPLOAD_PRESET);
+
+    try {
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: data,
+        }
+      );
+
+      const result = await res.json();
+
+      setFormData((prev) => ({
+        ...prev,
+        avatar: result.secure_url,
+      }));
+    } catch (err) {
+      console.error(err);
+      alert("Upload image failed");
+    }
   };
+
+  /* ================= SAVE PROFILE ================= */
+  const handleSave = async () => {
+    try {
+      const payload = {
+        username: formData.username,
+        name: formData.name,
+        status: formData.status,
+        age: formData.age ? Number(formData.age) : null,
+        city: formData.location,
+        bio: formData.bio,
+        skills: formData.skills,
+        image_url: formData.avatar,
+      };
+
+      await updateProfileAPI(payload);
+
+      alert("Profile updated successfully 🎉");
+      navigate("/profile");
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to update profile");
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen flex items-center justify-center">
+          Loading profile...
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -40,12 +124,8 @@ const EditProfile = () => {
 
       <div className="min-h-screen bg-green-50 px-6 py-10">
         <div className="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-md">
-          {/* ===== TITLE ===== */}
-          <h1 className="text-3xl font-bold text-green-800">
-            Edit Profile
-          </h1>
+          <h1 className="text-3xl font-bold text-green-800">Edit Profile</h1>
 
-          {/* ===== BACK ===== */}
           <button
             onClick={() => navigate("/profile")}
             className="mt-2 text-sm text-green-700 hover:text-green-900"
@@ -55,7 +135,7 @@ const EditProfile = () => {
 
           <hr className="my-6" />
 
-          {/* ===== PHOTO SECTION ===== */}
+          {/* PHOTO */}
           <div className="flex flex-col items-center mb-10">
             <img
               src={formData.avatar}
@@ -82,73 +162,27 @@ const EditProfile = () => {
             />
           </div>
 
-          {/* ===== FORM ===== */}
+          {/* FORM */}
           <div className="space-y-5">
-            {/* USERNAME */}
-            <div>
-              <label className="font-semibold">Username</label>
-              <input
-                value={formData.username}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    username: e.target.value.replace(/\s/g, ""),
-                  })
-                }
-                placeholder="username (tanpa spasi)"
-                className="w-full p-2 border rounded mt-1"
-              />
-            </div>
+            {[
+              ["Username", "username"],
+              ["Nama", "name"],
+              ["Umur", "age"],
+              ["Lokasi", "location"],
+              ["Status", "status"],
+            ].map(([label, key]) => (
+              <div key={key}>
+                <label className="font-semibold">{label}</label>
+                <input
+                  value={formData[key]}
+                  onChange={(e) =>
+                    setFormData({ ...formData, [key]: e.target.value })
+                  }
+                  className="w-full p-2 border rounded mt-1"
+                />
+              </div>
+            ))}
 
-            {/* NAME */}
-            <div>
-              <label className="font-semibold">Nama</label>
-              <input
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full p-2 border rounded mt-1"
-              />
-            </div>
-
-            {/* AGE */}
-            <div>
-              <label className="font-semibold">Umur</label>
-              <input
-                value={formData.age}
-                onChange={(e) =>
-                  setFormData({ ...formData, age: e.target.value })
-                }
-                className="w-full p-2 border rounded mt-1"
-              />
-            </div>
-
-            {/* LOCATION */}
-            <div>
-              <label className="font-semibold">Lokasi</label>
-              <input
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                className="w-full p-2 border rounded mt-1"
-              />
-            </div>
-
-            {/* STATUS */}
-            <div>
-              <label className="font-semibold">Status</label>
-              <input
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
-                }
-                className="w-full p-2 border rounded mt-1"
-              />
-            </div>
-
-            {/* BIO */}
             <div>
               <label className="font-semibold">Bio</label>
               <textarea
@@ -208,9 +242,7 @@ const EditProfile = () => {
                       setNewSkill("");
                     }
                   }}
-                  className="px-6 py-2 bg-green-700
-                             text-white rounded-lg
-                             hover:bg-green-800"
+                  className="px-6 py-2 bg-green-700 text-white rounded-lg"
                 >
                   Add
                 </button>
@@ -218,13 +250,11 @@ const EditProfile = () => {
             </div>
           </div>
 
-          {/* ===== SAVE ===== */}
+          {/* SAVE */}
           <div className="mt-10 flex justify-end">
             <button
-              onClick={() => navigate("/profile")}
-              className="px-6 py-2 bg-green-700
-                         text-white rounded-lg
-                         hover:bg-green-800"
+              onClick={handleSave}
+              className="px-6 py-2 bg-green-700 text-white rounded-lg"
             >
               Save Changes
             </button>
