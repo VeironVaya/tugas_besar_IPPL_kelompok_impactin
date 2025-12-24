@@ -6,6 +6,7 @@ import (
 	"backend/internal/app/models"
 	"backend/internal/app/repositories"
 	"errors"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -87,8 +88,12 @@ func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfi
 
 	// --- Update Username ---
 	if dto.Username != nil && *dto.Username != profile.Username {
+		if strings.TrimSpace(*dto.Username) == "" {
+			return response.EditProfileSkillResponseDto{}, errors.New("username cannot be empty")
+		}
+		
 		if s.userRepo.IsUsernameExistsExceptUser(*dto.Username, userID) {
-			return response.EditProfileSkillResponseDto{}, errors.New("username alreadt exists")
+			return response.EditProfileSkillResponseDto{}, errors.New("username already exists")
 		}
 
 		if err := s.userRepo.UpdateUsername(userID, *dto.Username); err != nil {
@@ -96,6 +101,26 @@ func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfi
 		}
 
 		profile.Username = *dto.Username
+	}
+
+	if dto.Name != nil {
+		if strings.TrimSpace(*dto.Name) == "" {
+			return response.EditProfileSkillResponseDto{}, errors.New("name cannot be empty")
+		}
+	}
+
+	if profile.Name != nil && dto.Name == nil {
+		return response.EditProfileSkillResponseDto{}, errors.New("name cannot be empty")
+	}
+
+	if dto.Age != nil {
+		if *dto.Age <= 0 {
+			return response.EditProfileSkillResponseDto{}, errors.New("age must be greater than 0")
+		}
+	}
+
+	if profile.Age != nil && dto.Age == nil {
+		return response.EditProfileSkillResponseDto{}, errors.New("age cannot be empty")
 	}
 
 	// --- Update biodata (opsional & nullable) ---

@@ -11,13 +11,15 @@ import (
 
 type EventRepository interface {
    Create(event *models.Event) error
+   GetEventByID(eventID uint) (*models.Event, error)
    GetAllEvents(category, search string, ageRanges []string) ([]response.EventListResponseDto, error)
    GetYourCreatedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
    GetEventDetailByID(eventID uint) (*response.EventDetailResponseDto, uint, error)
    GetCarouselEvents() (map[string]*response.EventCarouselItemDto, error)
    GetEventForJoin(eventID uint) (*response.EventJoinCheckDto, error)
-   AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error)
-   AdminGetApprovalEventDetail(eventID uint) (*response.EventResponseDto, error)
+   AdminGetAllEvents(status, search string) ([]response.AdminEventsResponseDto, int64, error)
+   AdminGetEventDetail(eventID uint) (*response.EventResponseDto, error)
+   UpdateApprovalStatus(event *models.Event) error
 }
 
 type eventRepository struct {
@@ -32,6 +34,12 @@ func (r *eventRepository) Create(event *models.Event) error {
    return r.db.Create(event).Error
 }
 
+func (r *eventRepository) GetEventByID(eventID uint) (*models.Event, error) {
+	var event models.Event
+	err := r.db.First(&event, eventID).Error
+	return &event, err
+}
+
 func (r *eventRepository) GetAllEvents(category, search string, ageRanges []string) ([]response.EventListResponseDto, error) {
 	var events []response.EventListResponseDto
 
@@ -43,11 +51,11 @@ func (r *eventRepository) GetAllEvents(category, search string, ageRanges []stri
 			events.cover_image,
 			events.start_date,
 			events.location,
-			COALESCE(NULLIF(profiles.name, ''), events.host_name) AS host_name
+			profiles.name AS host_name
 		`).
-		Joins("LEFT JOIN profiles ON profiles.user_id = events.user_id").
-		Where("events.status = ?", "pending")//.
-		// Where("events.sub_status IN ?", []string{"opened", "closed"})
+		Joins("JOIN profiles ON profiles.user_id = events.user_id").
+		Where("events.status = ?", "approved").
+		Where("events.sub_status IN ?", []string{"opened", "closed"})
 		
    if category != "" {
       query = query.Where("LOWER(events.category) = LOWER(?)", category)
@@ -60,7 +68,7 @@ func (r *eventRepository) GetAllEvents(category, search string, ageRanges []stri
 			LOWER(events.title) LIKE ? OR
 			LOWER(events.category) LIKE ? OR
 			LOWER(events.location) LIKE ? OR
-			LOWER(COALESCE(NULLIF(profiles.name, ''), events.host_name)) LIKE ?
+			LOWER(profiles.name) LIKE ?
 		)
 		`, keyword, keyword, keyword, keyword)
 	}
@@ -100,9 +108,10 @@ func (r *eventRepository) GetYourCreatedEvents(userID uint, status string) ([]re
 			events.start_date,
 			events.location,
 			events.status,
-			COALESCE(NULLIF(profiles.name, ''), events.host_name) AS host_name
+			events.sub_status,
+			profiles.name AS host_name
 		`).
-		Joins("LEFT JOIN profiles ON profiles.user_id = events.user_id").
+		Joins("JOIN profiles ON profiles.user_id = events.user_id").
 		Where("events.user_id = ?", userID)
 
 	switch status {
@@ -148,12 +157,12 @@ func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetai
 			events.terms,
 			events.min_age,
 			events.max_age,
-			COALESCE(NULLIF(profiles.name, ''), events.host_name) AS host_name,
+			profiles.name AS host_name,
 			events.user_id,
 			events.status,
 			events.sub_status
 		`).
-		Joins("LEFT JOIN profiles ON profiles.user_id = events.user_id").
+		Joins("JOIN profiles ON profiles.user_id = events.user_id").
 		Where("events.id = ?", eventID).
 		Take(&event)
 
@@ -195,8 +204,8 @@ func (r *eventRepository) GetCarouselEvents() (map[string]*response.EventCarouse
 				events.category,
 				events.cover_image
 			`).
-			Where("events.status = ?", "pending").
-			// Where("events.sub_status IN ?", []string{"opened"}).
+			Where("events.status = ?", "approved").
+			Where("events.sub_status IN ?", []string{"opened"}).
 			Where("events.category = ?", category).
 			Order("events.start_date DESC").
 			Limit(1).
@@ -241,12 +250,12 @@ func (r *eventRepository) GetEventForJoin(eventID uint) (*response.EventJoinChec
 	return &event, nil
 }
 
-func (r *eventRepository) AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error) {
-	var events []response.AdminEventApprovalResponse
+func (r *eventRepository) AdminGetAllEvents(status, search string) ([]response.AdminEventsResponseDto, int64, error) {
+	var events []response.AdminEventsResponseDto
 	var total int64
 
 	query := r.db.Table("events").
-		Where("status = ?", "pending")
+		Where("status = ?", status)
 
 	if search != "" {
 		if id, err := strconv.Atoi(search); err == nil {
@@ -268,12 +277,12 @@ func (r *eventRepository) AdminGetApprovalEvents(search string) ([]response.Admi
 	return events, total, err
 }
 
-func (r *eventRepository) AdminGetApprovalEventDetail(eventID uint) (*response.EventResponseDto, error) {
+func (r *eventRepository) AdminGetEventDetail(eventID uint) (*response.EventResponseDto, error) {
 	var event response.EventResponseDto
 
 	err := r.db.Table("events").
 		Select(`
-			COALESCE(NULLIF(profiles.name, ''), events.host_name) AS host_name,
+			profiles.name AS host_name,
 			events.user_id,
 			events.id AS event_id,
 			events.title,
@@ -292,11 +301,11 @@ func (r *eventRepository) AdminGetApprovalEventDetail(eventID uint) (*response.E
 			events.min_age,
 			events.max_age,
 			events.group_link,
-			events.status
+			events.status,
+			events.sub_status
 		`).
-		Joins("LEFT JOIN profiles ON profiles.user_id = events.user_id").
+		Joins("JOIN profiles ON profiles.user_id = events.user_id").
 		Where("events.id = ?", eventID).
-		Where("events.status = ?", "pending").
 		Scan(&event).Error
 
 	if err != nil {
@@ -308,4 +317,13 @@ func (r *eventRepository) AdminGetApprovalEventDetail(eventID uint) (*response.E
 	}
 
 	return &event, nil
+}
+
+func (r *eventRepository) UpdateApprovalStatus(event *models.Event) error {
+	return r.db.Model(&models.Event{}).
+		Where("id = ?", event.ID).
+		Updates(map[string]interface{}{
+			"status":     event.Status,
+			"sub_status": event.SubStatus,
+		}).Error
 }

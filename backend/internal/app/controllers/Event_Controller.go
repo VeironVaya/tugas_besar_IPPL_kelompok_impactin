@@ -176,10 +176,18 @@ func (c *EventController) JoinEvent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
-func (c *EventController) AdminGetApprovalEvents(ctx *gin.Context) {
+func (c *EventController) AdminGetAllEvents(ctx *gin.Context) {
 	search := ctx.Query("search")
+	status := ctx.Query("status")
 
-	events, total, err := c.eventService.AdminGetApprovalEvents(search)
+	if status == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "status is required (pending | approved | declined)",
+		})
+		return
+	}
+
+	events, total, err := c.eventService.AdminGetAllEvents(status, search)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -191,7 +199,7 @@ func (c *EventController) AdminGetApprovalEvents(ctx *gin.Context) {
 	})
 }
 
-func (c *EventController) AdminGetApprovalEventDetail(ctx *gin.Context) {
+func (c *EventController) AdminGetEventDetail(ctx *gin.Context) {
 
 	// pastikan admin auth sudah jalan
 	if _, exists := ctx.Get("admin_id"); !exists {
@@ -206,9 +214,39 @@ func (c *EventController) AdminGetApprovalEventDetail(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := c.eventService.AdminGetApprovalEventDetail(uint(eventID))
+	resp, err := c.eventService.AdminGetEventDetail(uint(eventID))
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+func (c *EventController) AdminEventApproval(ctx *gin.Context) {
+	// pastikan middleware admin sudah set ini
+	_, exists := ctx.Get("admin_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	eventIDParam := ctx.Param("event_id")
+	eventID, err := strconv.Atoi(eventIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		return
+	}
+
+	var req request.AdminApprovalRequestDto
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, err := c.eventService.AdminEventApproval(uint(eventID), req.Action)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
