@@ -15,3 +15,8 @@ export const getEventDetailAPI = async (eventId) => {
   const res = await api.get(`/user/events/${eventId}`);
   return res.data;
 };
+
+export const getEventsCarouselAPI = async () => {
+  const res = await api.get("/user/events/carousel");
+  return res.data;
+};

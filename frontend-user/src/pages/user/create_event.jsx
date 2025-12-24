@@ -39,8 +39,55 @@ export default function CreateEvent() {
 
   const navigate = useNavigate();
 
+  const [errors, setErrors] = useState({});
+
+
 const handleSubmit = async (e) => {
   e.preventDefault();
+  // ================= VALIDATION LOG =================
+const newErrors = {};
+
+if (!formData.title) newErrors.title = "Title is required";
+if (!formData.category) newErrors.category = "Category is required";
+if (!formData.location) newErrors.location = "Location is required";
+if (!formData.address) newErrors.address = "Address is required";
+if (!formData.addressLink) newErrors.addressLink = "Address link is required";
+if (!formData.startDate) newErrors.startDate = "Start date is required";
+if (!formData.endDate) newErrors.endDate = "End date is required";
+if (!formData.startTime) newErrors.startTime = "Start time is required";
+if (!formData.endTime) newErrors.endTime = "End time is required";
+if (!formData.maxParticipant || formData.maxParticipant < 1)
+  newErrors.maxParticipant = "Max participant must be at least 1";
+if (!formData.coverImage)
+  newErrors.coverImage = "Cover image is required";
+if (!formData.description)
+  newErrors.description = "Description is required";
+if (!formData.minAge)
+  newErrors.minAge = "Minimum age is required";
+if (!formData.maxAge)
+  newErrors.maxAge = "Maximum age is required";
+if (!formData.groupLink)
+  newErrors.groupLink = "Group link is required";
+
+// ⏰ VALIDASI JAM
+if (formData.startTime && formData.endTime) {
+  const start = new Date(`1970-01-01T${formData.startTime}`);
+  const end = new Date(`1970-01-01T${formData.endTime}`);
+
+  if (start >= end) {
+    newErrors.time = "Start time must be earlier than end time";
+  }
+}
+
+// LOG ERROR KE CONSOLE
+if (Object.keys(newErrors).length > 0) {
+  console.error("❌ FORM VALIDATION ERROR:", newErrors);
+  setErrors(newErrors);
+  alert("Form tidak valid. Cek console untuk detail error.");
+  return;
+}
+// ==================================================
+
 
   try {
     let imageUrl = "https://example.com/default.jpg";

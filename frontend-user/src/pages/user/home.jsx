@@ -5,7 +5,10 @@ import Footer from "../../components/footer.jsx";
 import EventCard from "../../components/event_card.jsx";
 import HERO_IMAGE from "../../assets/hero news.png";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-import { getAllEventsAPI } from "../../api/event";
+import {
+  getAllEventsAPI,
+  getEventsCarouselAPI,
+} from "../../api/event";
 
 import {
   Leaf,
@@ -14,7 +17,7 @@ import {
   HeartPulse,
 } from "lucide-react";
 
-/* ================= MOCK EVENTS (FALLBACK) ================= */
+/* ================= MOCK EVENTS (EVENT LIST ONLY) ================= */
 const mockEvents = [
   {
     id: 1,
@@ -66,16 +69,20 @@ const mockEvents = [
 const HomePage = () => {
   const navigate = useNavigate();
 
-  // ===== API EVENTS STATE =====
+  /* ================= EVENT LIST ================= */
   const [events, setEvents] = useState([]);
 
-  // ===== FETCH EVENTS FROM API =====
+  /* ================= HERO CAROUSEL ================= */
+  const [carouselEvents, setCarouselEvents] = useState([]);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  /* ================= FETCH EVENT LIST ================= */
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         const res = await getAllEventsAPI();
 
-        const mappedEvents = res.data.map((e) => ({
+        const mapped = res.data.map((e) => ({
           id: e.event_id,
           title: e.title,
           date: new Date(e.start_date).toLocaleDateString("en-US", {
@@ -88,7 +95,7 @@ const HomePage = () => {
           category: e.category,
         }));
 
-        setEvents(mappedEvents);
+        setEvents(mapped);
       } catch (err) {
         console.error("Failed to fetch events:", err);
       }
@@ -97,42 +104,157 @@ const HomePage = () => {
     fetchEvents();
   }, []);
 
-  // ===== DATA SOURCE (API FIRST, MOCK FALLBACK) =====
+  /* ================= FETCH HERO CAROUSEL ================= */
+useEffect(() => {
+  const fetchCarousel = async () => {
+    try {
+      console.log("👉 fetchCarousel CALLED");
+
+      const res = await getEventsCarouselAPI();
+      console.log("✅ RAW RESPONSE:", res);
+
+      const raw = res?.data || {};
+      console.log("📦 RAW DATA:", raw);
+
+      const order = ["environment", "education", "community", "health"];
+
+      const mapped = order
+        .map((key) => raw[key])
+        .filter(
+          (e) =>
+            e &&
+            typeof e === "object" &&
+            e.event_id &&
+            e.title &&
+            e.cover_image
+        )
+        .map((e) => ({
+          id: e.event_id,
+          title: e.title,
+          category: e.category,
+          imageUrl: e.cover_image,
+        }));
+
+      console.log("🎯 MAPPED:", mapped);
+
+      setCarouselEvents(mapped);
+      setActiveSlide(0);
+    } catch (err) {
+      console.error("❌ Failed to fetch carousel:", err);
+    }
+  };
+
+  fetchCarousel();
+}, []);
+
+  /* ================= AUTO SLIDE ================= */
+  useEffect(() => {
+    if (carouselEvents.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveSlide((prev) =>
+        prev === carouselEvents.length - 1 ? 0 : prev + 1
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [carouselEvents]);
+
+  /* ================= MANUAL NAV ================= */
+  const nextSlide = () => {
+    if (!carouselEvents.length) return;
+    setActiveSlide((prev) =>
+      prev === carouselEvents.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const prevSlide = () => {
+    if (!carouselEvents.length) return;
+    setActiveSlide((prev) =>
+      prev === 0 ? carouselEvents.length - 1 : prev - 1
+    );
+  };
+
+  /* ================= DATA SOURCE ================= */
   const eventSource = events.length ? events : mockEvents;
+  const currentSlide = carouselEvents[activeSlide];
 
   return (
     <>
       <main className="bg-[#225740] text-white">
         <Header variant="hero" />
 
-        {/* ================= HERO ================= */}
+        {/* ================= HERO (ALWAYS RENDER) ================= */}
         <section
-          className="relative min-h-screen bg-cover bg-center"
-          style={{ backgroundImage: `url(${HERO_IMAGE})` }}
+          className="relative min-h-screen bg-cover bg-center transition-all duration-700"
+          style={{
+            backgroundImage: `url(${currentSlide?.imageUrl || HERO_IMAGE})`,
+          }}
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
           <div className="relative max-w-6xl mx-auto px-6 lg:px-16 flex items-center min-h-screen">
             <div className="max-w-xl">
-              <h1 className="text-5xl md:text-6xl font-extrabold leading-tight">
-                DeepBlue Movement
-              </h1>
+              {currentSlide ? (
+                <>
+                  <span className="uppercase tracking-widest text-green-400 text-sm">
+                    {currentSlide.category}
+                  </span>
 
-              <p className="mt-4 text-white/80 text-lg">
-                Platform kolaborasi untuk aksi lingkungan dan sosial
-                yang berdampak nyata.
-              </p>
+                  <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mt-2">
+                    {currentSlide.title}
+                  </h1>
 
-              <button
-                onClick={() => navigate(`/event/${eventSource[0]?.id}`)}
-                className="mt-8 bg-green-600 hover:bg-green-700
-                           px-8 py-3 rounded-full font-semibold
-                           shadow-xl transition hover:scale-[1.05]"
-              >
-                See Details
-              </button>
+                  <button
+                    onClick={() => navigate(`/event/${currentSlide.id}`)}
+                    className="mt-8 bg-green-600 hover:bg-green-700
+                               px-8 py-3 rounded-full font-semibold
+                               shadow-xl transition hover:scale-[1.05]"
+                  >
+                    See Details
+                  </button>
+                </>
+              ) : (
+                <div className="h-32 w-96 rounded-xl bg-white/10 animate-pulse" />
+              )}
             </div>
           </div>
+
+          {/* ARROWS */}
+          {carouselEvents.length > 1 && (
+            <>
+              <button
+                onClick={prevSlide}
+                className="absolute left-6 top-1/2 -translate-y-1/2
+                           bg-black/40 hover:bg-black/60
+                           p-3 rounded-full text-xl"
+              >
+                ◀
+              </button>
+
+              <button
+                onClick={nextSlide}
+                className="absolute right-6 top-1/2 -translate-y-1/2
+                           bg-black/40 hover:bg-black/60
+                           p-3 rounded-full text-xl"
+              >
+                ▶
+              </button>
+
+              {/* DOTS */}
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3">
+                {carouselEvents.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveSlide(i)}
+                    className={`h-3 w-3 rounded-full ${
+                      i === activeSlide ? "bg-white" : "bg-white/40"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </section>
 
         {/* ================= CATEGORY HIGHLIGHT ================= */}
@@ -144,47 +266,17 @@ const HomePage = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                {
-                  title: "Environment",
-                  desc: "Aksi nyata untuk menjaga alam, laut, dan ekosistem demi keberlanjutan masa depan.",
-                  Icon: Leaf,
-                },
-                {
-                  title: "Education",
-                  desc: "Meningkatkan kesadaran dan pengetahuan melalui edukasi yang inklusif.",
-                  Icon: BookOpen,
-                },
-                {
-                  title: "Community",
-                  desc: "Menguatkan komunitas lokal melalui kolaborasi dan aksi bersama.",
-                  Icon: Users,
-                },
-                {
-                  title: "Health",
-                  desc: "Mendukung kesehatan fisik dan mental masyarakat melalui kampanye preventif.",
-                  Icon: HeartPulse,
-                },
-              ].map(({ title, desc, Icon }) => (
+                { title: "Environment", Icon: Leaf },
+                { title: "Education", Icon: BookOpen },
+                { title: "Community", Icon: Users },
+                { title: "Health", Icon: HeartPulse },
+              ].map(({ title, Icon }) => (
                 <div
                   key={title}
-                  className="group relative overflow-hidden
-                             bg-white/10 backdrop-blur-xl
-                             border border-white/20
-                             rounded-3xl p-8
-                             transition-all duration-300
-                             hover:bg-white/20
-                             hover:-translate-y-2
-                             hover:shadow-2xl"
+                  className="bg-white/10 rounded-3xl p-8 text-center"
                 >
-                  <div className="group-hover:opacity-0 transition">
-                    <Icon size={42} className="text-white mb-4" />
-                    <h3 className="text-xl font-bold">{title}</h3>
-                  </div>
-
-                  <div className="absolute inset-0 p-8 flex items-center justify-center
-                                  opacity-0 group-hover:opacity-100 transition">
-                    <p className="text-sm text-white/90">{desc}</p>
-                  </div>
+                  <Icon size={42} className="mx-auto mb-4" />
+                  <h3 className="text-xl font-bold">{title}</h3>
                 </div>
               ))}
             </div>
@@ -199,45 +291,23 @@ const HomePage = () => {
                 .filter((e) => e.category === category)
                 .slice(0, 16);
 
-              if (filtered.length === 0) return null;
+              if (!filtered.length) return null;
 
               return (
-                <div key={category} className="w-full px-6 lg:px-20">
+                <div key={category} className="px-6 lg:px-20">
                   <h2 className="text-2xl font-extrabold mb-10">
                     {category}
                   </h2>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
                     {filtered.map((event) => (
-                      <div
-                        key={event.id}
-                        className="bg-white rounded-2xl shadow-xl
-                                   hover:shadow-2xl transition
-                                   hover:-translate-y-1"
-                      >
-                        <EventCard {...event} />
-                      </div>
+                      <EventCard key={event.id} {...event} />
                     ))}
                   </div>
                 </div>
               );
             }
           )}
-        </section>
-
-        {/* ================= FINAL CTA ================= */}
-        <section className="py-28 text-center">
-          <h2 className="text-3xl font-extrabold mb-4">
-            Ready to Make an Impact?
-          </h2>
-          <button
-            onClick={() => navigate("/create-event")}
-            className="bg-green-600 hover:bg-green-700
-                       px-10 py-4 rounded-full font-semibold
-                       shadow-xl hover:scale-[1.05] transition"
-          >
-            Create an Event
-          </button>
         </section>
       </main>
 
