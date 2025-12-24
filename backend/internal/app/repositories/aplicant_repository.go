@@ -9,6 +9,8 @@ import (
 type ApplicantRepository interface {
 	IsAlreadyApplicant(userID, eventID uint) (bool, error)
 	Create(applicant *models.Applicant) error
+	Delete(userID, eventID uint) error
+	DeleteTx(tx *gorm.DB, userID, eventID uint) error
 }
 
 type applicantRepository struct {
@@ -30,3 +32,16 @@ func (r *applicantRepository) IsAlreadyApplicant(userID, eventID uint) (bool, er
 func (r *applicantRepository) Create(applicant *models.Applicant) error {
 	return r.db.Create(applicant).Error
 }
+
+func (r *applicantRepository) Delete(userID, eventID uint) error {
+	return r.db.
+		Where("user_id = ? AND event_id = ?", userID, eventID).
+		Delete(&models.Applicant{}).Error
+}
+
+func (r *applicantRepository) DeleteTx(tx *gorm.DB, userID, eventID uint) error {
+	return tx.
+		Where("user_id = ? AND event_id = ?", userID, eventID).
+		Delete(&models.Applicant{}).Error
+}
+

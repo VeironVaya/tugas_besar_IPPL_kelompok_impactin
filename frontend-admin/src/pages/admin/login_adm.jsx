@@ -57,7 +57,7 @@ const LoginAdmPage = () => {
             type="submit"
             className="w-full bg-gray-700 text-white py-3 rounded-full font-semibold transition"
           >
-            LOG IN
+            SIGN IN
           </button>
         </form>
       </div>

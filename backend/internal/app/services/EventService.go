@@ -24,16 +24,23 @@ type EventService interface {
 	AdminGetAllEvents(status, search string) ([]response.AdminEventsResponseDto, int64, error)
 	AdminGetEventDetail(eventID uint) (response.EventResponseDto, error)
 	AdminEventApproval(eventID uint, action string) (response.AdminEventApprovalResponseDto, error)
+	HostApplicantApproval(hostID uint, eventID uint, dto request.HostApplicantApprovalRequestDto) (response.HostApplicantApprovalResponseDto, error)
 }
 
 type eventService struct {
 	eventRepo repositories.EventRepository
 	profileRepo repositories.ProfileRepository
 	applicantRepo repositories.ApplicantRepository
+	participantRepo repositories.ParticipantRepository
 }
 
-func NewEventService(eventRepo repositories.EventRepository, profileRepo repositories.ProfileRepository, applicantRepo repositories.ApplicantRepository) EventService {
-	return &eventService{eventRepo, profileRepo, applicantRepo}
+func NewEventService(
+	eventRepo repositories.EventRepository,
+	profileRepo repositories.ProfileRepository,
+	applicantRepo repositories.ApplicantRepository,
+	participantRepo repositories.ParticipantRepository,
+) EventService {
+	return &eventService{eventRepo, profileRepo, applicantRepo, participantRepo}
 }
 
 func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (response.EventResponseDto, error) {
@@ -369,5 +376,90 @@ func (s *eventService) AdminEventApproval(eventID uint, action string) (response
 		Status:    event.Status,
 		SubStatus: event.SubStatus,
 		Message:   "event successfully " + action + "ed",
+	}, nil
+}
+
+func (s *eventService) HostApplicantApproval(hostID uint, eventID uint, dto request.HostApplicantApprovalRequestDto) (response.HostApplicantApprovalResponseDto, error) {
+
+	// 1. Ambil event
+	event, err := s.eventRepo.GetEventByID(eventID)
+	if err != nil {
+		return response.HostApplicantApprovalResponseDto{}, errors.New("event not found")
+	}
+
+	// 2. Validasi host
+	if event.UserID != hostID {
+		return response.HostApplicantApprovalResponseDto{}, errors.New("only host can manage applicants")
+	}
+
+	// 3. Cek applicant
+	exist, err := s.applicantRepo.IsAlreadyApplicant(dto.UserID, eventID)
+	if err != nil {
+		return response.HostApplicantApprovalResponseDto{}, err
+	}
+	if !exist {
+		return response.HostApplicantApprovalResponseDto{}, errors.New("applicant not found")
+	}
+
+	profile, err := s.profileRepo.GetByUserID(dto.UserID)
+	if err != nil {
+		return response.HostApplicantApprovalResponseDto{}, errors.New("applicant profile not found")
+	}
+
+	switch dto.Action {
+
+	case "reject":
+		if err := s.applicantRepo.Delete(dto.UserID, eventID); err != nil {
+			return response.HostApplicantApprovalResponseDto{}, err
+		}
+
+	case "approve":
+		// cek kuota
+		if event.CurrentParticipant >= event.MaxParticipant {
+			return response.HostApplicantApprovalResponseDto{}, errors.New("event is already full")
+		}
+
+		// TRANSACTION
+		err := s.eventRepo.WithTx(func(tx *gorm.DB) error {
+			if err := s.participantRepo.Create(tx, &models.Participant{
+				UserID:  dto.UserID,
+				EventID: eventID,
+			}); err != nil {
+				return err
+			}
+
+			if err := s.applicantRepo.DeleteTx(tx, dto.UserID, eventID); err != nil {
+				return err
+			}
+
+			if err := s.eventRepo.IncrementParticipant(tx, eventID); err != nil {
+				return err
+			}
+
+			// kalau penuh → closed
+			if event.CurrentParticipant+1 >= event.MaxParticipant {
+				sub := "closed"
+				return tx.Model(&models.Event{}).
+					Where("id = ?", eventID).
+					Update("sub_status", &sub).Error
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			return response.HostApplicantApprovalResponseDto{}, err
+		}
+
+	default:
+		return response.HostApplicantApprovalResponseDto{}, errors.New("invalid action")
+	}
+
+	return response.HostApplicantApprovalResponseDto{
+		EventID: eventID,
+		UserID:  dto.UserID,
+		Name: 	 *profile.Name,
+		Action:  dto.Action,
+		Message: "success",
 	}, nil
 }

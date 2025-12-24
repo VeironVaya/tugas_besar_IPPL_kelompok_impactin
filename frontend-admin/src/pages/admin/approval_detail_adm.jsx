@@ -1,33 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdminNavbar from "../../components/navbar_adm";
-import { useParams } from "react-router-dom";
-import MOCK_CARD_IMAGE from "../../assets/hero news.png";
+import { useParams, useNavigate } from "react-router-dom";
+import { getEventApprovalDetail, updateEventStatus } from "../../api/event";
 
-
-
-const sampleEvents = [
-  {
-      id: "1",
-      title: "DeepBlue Movement",
-      host: "ipan",
-      category: "Ekosistem Laut",
-      location: "Yogyakarta, Indonesia",
-      specific: "The Legend of Blue Sea",
-      address: "The Legend of Blue Sea",
-      addressUrl: "https://maps.app.goo.gl/srGVs65T4DmvcwPV8",
-      startDate: "18 September 2025",
-      endDate: "23 September 2025",
-      startTime: "09.00",
-      endTime: "14.00",
-      maxParticipant: 100,
-      coverFileName: MOCK_CARD_IMAGE,
-      description: "The DeepBlue Movement is a collective call to action aimed at maintaining the health and sustainability of Indonesia's marine ecosystems. This event invites all volunteers, divers, communities, and concerned individuals to get directly involved in conservation efforts across our coastal and aquatic areas.",
-      terms: `bisa berenang`,
-      minAge: 17,
-      maxAge: 0,
-      groupLink: "https://chat.whatsapp.com/DmGBacX2CPNYRU?mode=wwc",
-    }
-];
 
 const Field = ({ label, children }) => (
   <div className="space-y-1">
@@ -38,29 +13,46 @@ const Field = ({ label, children }) => (
   </div>
 );
 
+const formatDate = (iso) =>
+  new Date(iso).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
 const ApprovalDetailPage = () => {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [actionType, setActionType] = useState(""); // "accept" | "reject"
-
-  const openConfirm = (type) => {
-    setActionType(type);
-    setConfirmOpen(true);
-  };
-
-  const handleConfirm = () => {
-    if (actionType === "accept") {
-      console.log("Event accepted:", event.id);
-      // TODO: API accept logic
-    } else {
-      console.log("Event rejected:", event.id);
-      // TODO: API reject logic
-    }
-    setConfirmOpen(false);
-  };
-
   const { id } = useParams();
-  const event = sampleEvents.find((e) => e.id === String(id));
+  const navigate = useNavigate();
 
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [actionType, setActionType] = useState("");
+
+  useEffect(() => {
+    getEventApprovalDetail(id)
+      .then((res) => {
+        setEvent(res.data); // ✅ FIX
+      })
+      .catch(() => setEvent(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const handleConfirm = async () => {
+  try {
+    await updateEventStatus(event.event_id, actionType);
+    alert(`Event ${actionType}ed successfully`);
+    navigate("/approval"); // go back to approval list
+  } catch (err) {
+    console.error(err);
+    alert("Action failed");
+  } finally {
+    setConfirmOpen(false);
+  }
+};
+
+
+  if (loading) return <div className="p-6">Loading...</div>;
   if (!event) return <div className="p-6">Event not found.</div>;
 
   return (
@@ -72,47 +64,42 @@ const ApprovalDetailPage = () => {
       <div className="px-6 py-6">
         <div className="bg-white rounded-lg shadow p-6 space-y-6 max-w-5xl mx-auto">
 
-          <h2 className="text-lg font-semibold">Event Information for ID: {event.id}</h2>
+          <h2 className="text-lg font-semibold">
+            Event Information for ID: {event.event_id}
+          </h2>
 
-          {/* Title */}
           <Field label="Event Title">{event.title}</Field>
-
-          {/* Host */}
-          <Field label="Event Host">{event.host}</Field>
-
-          {/* Category */}
+          <Field label="Event Host">{event.host_name}</Field>
           <Field label="Event Category">{event.category}</Field>
+          <Field label="Location">{event.location}</Field>
+          <Field label="Specific Location">{event.specific_address}</Field>
 
-          {/* Location + Specific Location */}
-            <Field label="Location">{event.location}</Field>
-            <Field label="Specific Location">{event.specific}</Field>
-
-          {/* Group Link */}
           <div>
-            <label className="text-xs font-semibold text-gray-600">Address URL</label>
+            <label className="text-xs font-semibold text-gray-600">
+              Address URL
+            </label>
             <div className="border rounded-md px-3 py-2 bg-gray-100">
               <a
-                href={event.addressUrl}
+                href={event.address_link}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="underline break-all text-sm"
               >
-                {event.addressUrl}
+                {event.address_link}
               </a>
             </div>
           </div>
 
-          {/* Dates & Times */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Event Start Date">{event.startDate}</Field>
-            <Field label="Event End Date">{event.endDate}</Field>
-            <Field label="Event Start Time">{event.startTime}</Field>
-            <Field label="Event End Time">{event.endTime}</Field>
+            <Field label="Start Date">{formatDate(event.start_date)}</Field>
+            <Field label="End Date">{formatDate(event.end_date)}</Field>
+            <Field label="Start Time">{event.start_time}</Field>
+            <Field label="End Time">{event.end_time}</Field>
           </div>
 
           {/* Max Participant + Cover */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Maximum Participant">{event.maxParticipant}</Field>
+            <Field label="Maximum Participant">{event.max_participant}</Field>
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-600">Event Cover</label>
@@ -121,107 +108,114 @@ const ApprovalDetailPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M16 3v4M8 3v4" />
                 </svg>
                 <a
-                  href={MOCK_CARD_IMAGE}
+                  href={event.cover_image}
                   target="_blank"
                   rel="noreferrer noopener"
                   className="underline text-blue-600 text-sm"
                 >
-                  click to preview image
+                  click here to preview image
                 </a>
               </div>
             </div>
           </div>
 
-          {/* Description */}
           <div>
-            <label className="text-xs font-semibold text-gray-600">Event Description</label>
-            <div className="border rounded-md p-3 bg-gray-100 max-h-60 overflow-y-auto whitespace-pre-wrap text-sm mt-1">
+            <label className="text-xs font-semibold text-gray-600">
+              Event Description
+            </label>
+            <div className="border rounded-md p-3 bg-gray-100 whitespace-pre-wrap text-sm mt-1">
               {event.description}
             </div>
           </div>
 
-          {/* Terms */}
           <div>
-            <label className="text-xs font-semibold text-gray-600">Terms & Conditions</label>
-            <div className="border rounded-md p-3 bg-gray-100 max-h-60 overflow-y-auto whitespace-pre-wrap text-sm mt-1">
-              {event.terms}
+            <label className="text-xs font-semibold text-gray-600">
+              Terms & Conditions
+            </label>
+            <div className="border rounded-md p-3 bg-gray-100 whitespace-pre-wrap text-sm mt-1">
+              {event.terms || "-"}
             </div>
           </div>
 
-          {/* Ages */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Minimum Age">{event.minAge}</Field>
-            <Field label="Maximum Age">{event.maxAge}</Field>
+            <Field label="Minimum Age">{event.min_age}</Field>
+            <Field label="Maximum Age">{event.max_age}</Field>
           </div>
 
-          {/* Group Link */}
           <div>
-            <label className="text-xs font-semibold text-gray-600">Group Link</label>
+            <label className="text-xs font-semibold text-gray-600">
+              Group Link
+            </label>
             <div className="border rounded-md px-3 py-2 bg-gray-100">
               <a
-                href={event.groupLink}
+                href={event.group_link}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="underline break-all text-sm"
               >
-                {event.groupLink}
+                {event.group_link}
               </a>
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="flex justify-end gap-3 pt-2">
             <button
-              onClick={() => openConfirm("accept")}
+              onClick={() => {
+                setActionType("accept");
+                setConfirmOpen(true);
+              }}
               className="px-6 py-2 rounded bg-green-600 text-white"
             >
               Accept
             </button>
 
             <button
-              onClick={() => openConfirm("reject")}
+              onClick={() => {
+                setActionType("reject");
+                setConfirmOpen(true);
+              }}
               className="px-6 py-2 rounded bg-red-600 text-white"
             >
               Reject
             </button>
+
+            <button
+                  className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+                  onClick={() => navigate(-1)}
+                >
+                  Close
+                </button>
           </div>
+
           {confirmOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-lg">
-              <h3 className="text-lg font-semibold mb-3">
-                Confirm {actionType === "accept" ? "Acceptance" : "Rejection"}
-              </h3>
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-lg">
+                <h3 className="text-lg font-semibold mb-3">
+                  Confirm {actionType === "accept" ? "Acceptance" : "Rejection"}
+                </h3>
 
-              <p className="text-sm text-gray-600 mb-6">
-                Are you sure you want to{" "}
-                <span className="font-semibold">
-                  {actionType === "accept" ? "accept" : "reject"}
-                </span>{" "}
-                this event?
-              </p>
-
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setConfirmOpen(false)}
-                  className="px-4 py-2 rounded border text-gray-700"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  onClick={handleConfirm}
-                  className={`px-4 py-2 rounded text-white ${
-                    actionType === "accept"
-                      ? "bg-green-600"
-                      : "bg-red-600"
-                  }`}
-                >
-                  Confirm
-                </button>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setConfirmOpen(false)}
+                    className="px-4 py-2 rounded border"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirm}
+                    className={`px-4 py-2 rounded text-white ${
+                      actionType === "accept"
+                        ? "bg-green-600"
+                        : "bg-red-600"
+                    }`}
+                  >
+                    Confirm
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+
         </div>
       </div>
     </div>
