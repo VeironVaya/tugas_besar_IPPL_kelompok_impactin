@@ -47,6 +47,8 @@ func ReportRoutes(router *gin.Engine, reportController *controllers.ReportContro
 	authAdmin.Use(utils.AdminAuth())
 	{
 		authAdmin.GET("/report", reportController.AdminGetAllReportedEvents)
+		authAdmin.GET("/report/:report_id", reportController.AdminGetReportedEventDetail)
+		authAdmin.PATCH("/report/resolve/:report_id", reportController.ResolveReport)
 	}
 }
 
