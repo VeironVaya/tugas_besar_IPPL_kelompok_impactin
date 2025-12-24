@@ -310,3 +310,36 @@ func (c *EventController) HostRemoveParticipant(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, resp)
 }
+
+func (c *EventController) CancelEvent(ctx *gin.Context) {
+	eventIDParam := ctx.Param("event_id")
+	eventID, err := strconv.Atoi(eventIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid event id",
+		})
+		return
+	}
+
+	var userID *uint
+	if uid, exists := ctx.Get("user_id"); exists {
+		u := uid.(uint)
+		userID = &u
+	}
+
+	var adminID *uint
+	if aid, exists := ctx.Get("admin_id"); exists {
+		a := aid.(uint)
+		adminID = &a
+	}
+	
+	resp, err := c.eventService.CancelEvent(uint(eventID), userID, adminID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}

@@ -26,6 +26,7 @@ type EventService interface {
 	AdminEventApproval(eventID uint, action string) (response.AdminEventApprovalResponseDto, error)
 	HostApplicantApproval(hostID uint, eventID uint, dto request.HostApplicantApprovalRequestDto) (response.HostApplicantApprovalResponseDto, error)
 	HostRemoveParticipant(hostID uint, eventID uint, dto request.HostRemoveParticipantRequestDto) (response.HostRemoveParticipantResponseDto, error)
+	CancelEvent(eventID uint, userID *uint, adminID *uint) (response.CancelEventResponseDto, error)
 }
 
 type eventService struct {
@@ -550,5 +551,49 @@ func (s *eventService) HostRemoveParticipant(hostID uint, eventID uint, dto requ
 		Name: 	 *profile.Name,
 		CurrentParticipant: event.CurrentParticipant,
 		Message: "participant removed successfully",
+	}, nil
+}
+
+func (s *eventService) CancelEvent(eventID uint, userID *uint, adminID *uint) (response.CancelEventResponseDto, error) {
+	event, err := s.eventRepo.GetEventByID(eventID)
+	if err != nil {
+		return response.CancelEventResponseDto{}, errors.New("event not found")
+	}
+
+	if event.Status != "approved" {
+		return response.CancelEventResponseDto{}, errors.New("event cannot be cancelled")
+	}
+
+	if event.SubStatus == nil || (*event.SubStatus != "opened" && *event.SubStatus != "closed") {
+		if *event.SubStatus == "cancelled" {
+			return response.CancelEventResponseDto{}, errors.New("event already cancelled")
+		}
+		return response.CancelEventResponseDto{}, errors.New("event cannot be cancelled")
+	}
+
+	if adminID == nil {
+		if userID == nil || event.UserID != *userID {
+			return response.CancelEventResponseDto{}, errors.New("only host or admin can cancel this event")
+		}
+	}
+
+	subStatus := "cancelled"
+	event.SubStatus = &subStatus
+
+	if err := s.eventRepo.UpdateSubStatus(eventID, subStatus); err != nil {
+		return response.CancelEventResponseDto{}, err
+	}
+
+	profile, err := s.profileRepo.GetByUserID(event.UserID)
+	if err != nil {
+		return response.CancelEventResponseDto{}, errors.New("host profile not found")
+	}
+
+	return response.CancelEventResponseDto{
+		EventID:   event.ID,
+		Title:     event.Title,
+		HostName:  *profile.Name,
+		Status:    event.Status,
+		SubStatus: event.SubStatus,
 	}, nil
 }
