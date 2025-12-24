@@ -10,6 +10,7 @@ import (
 
 type ReportService interface {
 	CreateReportEvent(userID uint, eventID uint, dto request.ReportEventRequestDto,) (response.ReportEventResponseDto, error)
+	AdminGetAllReportedEvents(status, search string) ([]response.AdminReportedEventsResponseDto, int64, error)
 }
 
 type reportService struct {
@@ -89,4 +90,17 @@ func (s *reportService) CreateReportEvent(userID uint, eventID uint, dto request
 		Description: report.Description,
 		ReportedAt:  report.CreatedAt.Format("2006-01-02"),
 	}, nil
+}
+
+func (s *reportService) AdminGetAllReportedEvents(status, search string) ([]response.AdminReportedEventsResponseDto, int64, error) {
+	validStatus := map[string]bool{
+		"pending": true,
+		"resolved": true,
+	}
+
+	if !validStatus[status] {
+		return nil, 0, errors.New("invalid status filter")
+	}
+
+	return s.reportRepo.AdminGetAllReportedEvents(status, search)
 }
