@@ -21,7 +21,9 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 		auth.GET("/your", eventController.GetYourCreatedEvents)
 		auth.GET("/:event_id", eventController.GetEventDetail)
 		auth.POST("/join/:event_id", eventController.JoinEvent)
-		auth.PATCH("applicants/:event_id", eventController.HostApplicantApproval)
+		auth.PATCH("/applicants/:event_id", eventController.HostApplicantApproval)
+		auth.DELETE("/participants/:event_id", eventController.HostRemoveParticipant)
+		auth.PATCH("/cancel/:event_id", eventController.CancelEvent)
 	}
 
 	authAdmin := router.Group("api/admin/events")
@@ -30,6 +32,15 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 		authAdmin.GET("/", eventController.AdminGetAllEvents)
 		authAdmin.GET("/:event_id", eventController.AdminGetEventDetail)
 		authAdmin.PATCH("/approval/:event_id", eventController.AdminEventApproval)
+		authAdmin.PATCH("/cancel/:event_id", eventController.CancelEvent)
+	}
+}
+
+func ReportRoutes(router *gin.Engine, reportController *controllers.ReportController) {
+	r := router.Group("/api/user/events")
+	r.Use(utils.Auth())
+	{
+		r.POST("/report/:event_id", reportController.CreateEventReport)
 	}
 }
 
@@ -41,7 +52,7 @@ func UserRoutes(router *gin.Engine, userController *controllers.UserController) 
 	}
 }
 
-func AdminRoutes(router *gin.Engine, adminController *controllers.AdminControler) {
+func AdminRoutes(router *gin.Engine, adminController *controllers.AdminController) {
 	r := router.Group("/api/admin")
 	{
 		r.POST("/login", adminController.Login)
@@ -51,7 +62,6 @@ func AdminRoutes(router *gin.Engine, adminController *controllers.AdminControler
 func ProfileRoutes(router *gin.Engine, profileController *controllers.ProfileController) {
 	r := router.Group("/api/user/profile")
 	r.Use(utils.Auth()) // JWT middleware
-
 	{
 		r.GET("/", profileController.GetProfile)
 		r.PATCH("/", profileController.EditProfileAndSkills)
@@ -63,10 +73,12 @@ func SetupAllRoutes(router *gin.Engine,
 	eventController *controllers.EventController,
 	userController *controllers.UserController,
 	profileController *controllers.ProfileController,
-	adminController *controllers.AdminControler,
+	adminController *controllers.AdminController,
+	reportController *controllers.ReportController,
 ) {
 	EventRoutes(router, eventController)
 	UserRoutes(router, userController)
 	ProfileRoutes(router, profileController)
 	AdminRoutes(router, adminController)
+	ReportRoutes(router, reportController)
 }

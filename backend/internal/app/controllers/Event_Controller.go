@@ -280,3 +280,66 @@ func (c *EventController) HostApplicantApproval(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, resp)
 }
+
+func (c *EventController) HostRemoveParticipant(ctx *gin.Context) {
+	eventIDParam := ctx.Param("event_id")
+
+	uid, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	eventID, err := strconv.Atoi(eventIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		return
+	}
+
+	var dto request.HostRemoveParticipantRequestDto
+	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, err := c.eventService.HostRemoveParticipant(uid.(uint), uint(eventID), dto)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+func (c *EventController) CancelEvent(ctx *gin.Context) {
+	eventIDParam := ctx.Param("event_id")
+	eventID, err := strconv.Atoi(eventIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid event id",
+		})
+		return
+	}
+
+	var userID *uint
+	if uid, exists := ctx.Get("user_id"); exists {
+		u := uid.(uint)
+		userID = &u
+	}
+
+	var adminID *uint
+	if aid, exists := ctx.Get("admin_id"); exists {
+		a := aid.(uint)
+		adminID = &a
+	}
+	
+	resp, err := c.eventService.CancelEvent(uint(eventID), userID, adminID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}

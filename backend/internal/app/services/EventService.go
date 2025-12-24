@@ -25,6 +25,8 @@ type EventService interface {
 	AdminGetEventDetail(eventID uint) (response.EventResponseDto, error)
 	AdminEventApproval(eventID uint, action string) (response.AdminEventApprovalResponseDto, error)
 	HostApplicantApproval(hostID uint, eventID uint, dto request.HostApplicantApprovalRequestDto) (response.HostApplicantApprovalResponseDto, error)
+	HostRemoveParticipant(hostID uint, eventID uint, dto request.HostRemoveParticipantRequestDto) (response.HostRemoveParticipantResponseDto, error)
+	CancelEvent(eventID uint, userID *uint, adminID *uint) (response.CancelEventResponseDto, error)
 }
 
 type eventService struct {
@@ -214,17 +216,37 @@ func (s *eventService) GetYourCreatedEvents(userID uint, status string) ([]respo
 }
 
 func (s *eventService) GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error) {
-	event, hostID, err := s.eventRepo.GetEventDetailByID(eventID)
+	event, hostID, groupLink, err := s.eventRepo.GetEventDetailByID(eventID)
 	if err != nil {
 		return nil, err
 	}
 
 	// default
 	event.IsHost = false
+	event.IsApplicant = false
+	event.IsParticipant = false
 	event.Message = "event detail retrieved successfully"
 
 	if userID == hostID {
 		event.IsHost = true
+		event.GroupLink = groupLink
+	}
+
+	appExist, err := s.applicantRepo.IsAlreadyApplicant(userID, eventID)
+	if err != nil {
+		return &response.EventDetailResponseDto{}, err
+	}
+	if appExist {
+		event.IsApplicant = true
+	}
+
+	parExist, err := s.participantRepo.IsAlreadyParticipant(userID, eventID)
+	if err != nil {
+		return &response.EventDetailResponseDto{}, err
+	}
+	if parExist {
+		event.IsParticipant = true
+		event.GroupLink = groupLink
 	}
 
 	return event, nil
@@ -284,11 +306,19 @@ func (s *eventService) JoinEvent(userID, eventID uint) (response.JoinEventRespon
 	}
 
 	// 5. Duplicate join
-	exist, err := s.applicantRepo.IsAlreadyApplicant(userID, eventID)
+	appExist, err := s.applicantRepo.IsAlreadyApplicant(userID, eventID)
 	if err != nil {
 		return response.JoinEventResponseDto{}, err
 	}
-	if exist {
+	if appExist {
+		return response.JoinEventResponseDto{}, errors.New("you already joining this event, waiting for host approval")
+	}
+
+	parExist, err := s.participantRepo.IsAlreadyParticipant(userID, eventID)
+	if err != nil {
+		return response.JoinEventResponseDto{}, err
+	}
+	if parExist {
 		return response.JoinEventResponseDto{}, errors.New("you already joined this event")
 	}
 
@@ -306,7 +336,7 @@ func (s *eventService) JoinEvent(userID, eventID uint) (response.JoinEventRespon
 		UserID:  applicant.UserID,
 		Name:	 *profile.Name,
 		Age: 	 *profile.Age,
-		Message: "successfully joined event",
+		Message: "successfully joining event, waiting for host approval",
 	}, nil
 }
 
@@ -392,13 +422,21 @@ func (s *eventService) HostApplicantApproval(hostID uint, eventID uint, dto requ
 		return response.HostApplicantApprovalResponseDto{}, errors.New("only host can manage applicants")
 	}
 
-	// 3. Cek applicant
-	exist, err := s.applicantRepo.IsAlreadyApplicant(dto.UserID, eventID)
+	// 3. Cek applicant & participant
+	appExist, err := s.applicantRepo.IsAlreadyApplicant(dto.UserID, eventID)
 	if err != nil {
 		return response.HostApplicantApprovalResponseDto{}, err
 	}
-	if !exist {
+	if !appExist {
 		return response.HostApplicantApprovalResponseDto{}, errors.New("applicant not found")
+	}
+
+	parExist, err := s.participantRepo.IsAlreadyParticipant(dto.UserID, eventID)
+	if err != nil {
+		return response.HostApplicantApprovalResponseDto{}, err
+	}
+	if parExist {
+		return response.HostApplicantApprovalResponseDto{}, errors.New("applicant already in participant")
 	}
 
 	profile, err := s.profileRepo.GetByUserID(dto.UserID)
@@ -435,9 +473,10 @@ func (s *eventService) HostApplicantApproval(hostID uint, eventID uint, dto requ
 			if err := s.eventRepo.IncrementParticipant(tx, eventID); err != nil {
 				return err
 			}
+			event.CurrentParticipant++
 
 			// kalau penuh → closed
-			if event.CurrentParticipant+1 >= event.MaxParticipant {
+			if event.CurrentParticipant >= event.MaxParticipant {
 				sub := "closed"
 				return tx.Model(&models.Event{}).
 					Where("id = ?", eventID).
@@ -460,6 +499,121 @@ func (s *eventService) HostApplicantApproval(hostID uint, eventID uint, dto requ
 		UserID:  dto.UserID,
 		Name: 	 *profile.Name,
 		Action:  dto.Action,
+		CurrentParticipant: event.CurrentParticipant,
 		Message: "success",
+	}, nil
+}
+
+func (s *eventService) HostRemoveParticipant(hostID uint, eventID uint, dto request.HostRemoveParticipantRequestDto) (response.HostRemoveParticipantResponseDto, error) {
+	// 1. Ambil event
+	event, err := s.eventRepo.GetEventByID(eventID)
+	if err != nil {
+		return response.HostRemoveParticipantResponseDto{}, errors.New("event not found")
+	}
+
+	// 2. Validasi host
+	if event.UserID != hostID {
+		return response.HostRemoveParticipantResponseDto{}, errors.New("only host can remove participant")
+	}
+
+	// 3. Pastikan participant ada
+	exist, err := s.participantRepo.IsAlreadyParticipant(dto.UserID, eventID)
+	if err != nil {
+		return response.HostRemoveParticipantResponseDto{}, err
+	}
+	if !exist {
+		return response.HostRemoveParticipantResponseDto{}, errors.New("participant not found")
+	}
+
+	profile, err := s.profileRepo.GetByUserID(dto.UserID)
+	if err != nil {
+		return response.HostRemoveParticipantResponseDto{}, errors.New("participant profile not found")
+	}
+
+	// 4. Hapus participant
+	if err := s.participantRepo.Delete(dto.UserID, eventID); err != nil {
+		return response.HostRemoveParticipantResponseDto{}, err
+	}
+
+	// 5. Kurangi current_participant (aman)
+	if event.CurrentParticipant > 0 {
+		if err := s.eventRepo.DecrementParticipant(eventID); err != nil {
+			return response.HostRemoveParticipantResponseDto{}, err
+		}
+		event.CurrentParticipant--
+	}
+
+	if event.Status == "approved" && event.SubStatus != nil {
+		if *event.SubStatus == "closed" && event.CurrentParticipant < event.MaxParticipant {
+
+			subStatus, err := utils.DetermineSubStatus(
+				event.StartDate,
+				event.StartTime,
+				event.EndDate,
+				event.EndTime,
+			)
+			if err != nil {
+				return response.HostRemoveParticipantResponseDto{}, err
+			}
+
+			// hanya update kalau opened
+			if subStatus == "opened" {
+				if err := s.eventRepo.UpdateSubStatus(eventID, subStatus); err != nil {
+					return response.HostRemoveParticipantResponseDto{}, err
+				}
+			}
+		}
+	}
+
+	return response.HostRemoveParticipantResponseDto{
+		EventID: eventID,
+		UserID:  dto.UserID,
+		Name: 	 *profile.Name,
+		CurrentParticipant: event.CurrentParticipant,
+		Message: "participant removed successfully",
+	}, nil
+}
+
+func (s *eventService) CancelEvent(eventID uint, userID *uint, adminID *uint) (response.CancelEventResponseDto, error) {
+	event, err := s.eventRepo.GetEventByID(eventID)
+	if err != nil {
+		return response.CancelEventResponseDto{}, errors.New("event not found")
+	}
+
+	if event.Status != "approved" {
+		return response.CancelEventResponseDto{}, errors.New("event cannot be cancelled")
+	}
+
+	if event.SubStatus == nil || (*event.SubStatus != "opened" && *event.SubStatus != "closed") {
+		if *event.SubStatus == "cancelled" {
+			return response.CancelEventResponseDto{}, errors.New("event already cancelled")
+		}
+		return response.CancelEventResponseDto{}, errors.New("event cannot be cancelled")
+	}
+
+	if adminID == nil {
+		if userID == nil || event.UserID != *userID {
+			return response.CancelEventResponseDto{}, errors.New("only host or admin can cancel this event")
+		}
+	}
+
+	subStatus := "cancelled"
+	event.SubStatus = &subStatus
+
+	if err := s.eventRepo.UpdateSubStatus(eventID, subStatus); err != nil {
+		return response.CancelEventResponseDto{}, err
+	}
+
+	profile, err := s.profileRepo.GetByUserID(event.UserID)
+	if err != nil {
+		return response.CancelEventResponseDto{}, errors.New("host profile not found")
+	}
+
+	return response.CancelEventResponseDto{
+		EventID:   event.ID,
+		Title:     event.Title,
+		HostName:  *profile.Name,
+		Status:    event.Status,
+		SubStatus: event.SubStatus,
 	}, nil
 }

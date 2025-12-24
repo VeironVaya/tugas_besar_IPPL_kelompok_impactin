@@ -8,17 +8,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type AdminControler struct {
+type AdminController struct {
 	adminService services.AdminService
 }
 
-func NewAdminController(as services.AdminService) *AdminControler {
-	return &AdminControler{
+func NewAdminController(as services.AdminService) *AdminController {
+	return &AdminController{
 		adminService: as,
 	}
 } 
 
-func (c *AdminControler) Login(ctx *gin.Context) {
+func (c *AdminController) Login(ctx *gin.Context) {
 	var req request.LoginRequestDto
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
