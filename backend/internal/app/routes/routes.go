@@ -21,7 +21,8 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 		auth.GET("/your", eventController.GetYourCreatedEvents)
 		auth.GET("/:event_id", eventController.GetEventDetail)
 		auth.POST("/join/:event_id", eventController.JoinEvent)
-		auth.PATCH("applicants/:event_id", eventController.HostApplicantApproval)
+		auth.PATCH("/applicants/:event_id", eventController.HostApplicantApproval)
+		auth.DELETE("/participants/:event_id", eventController.HostRemoveParticipant)
 	}
 
 	authAdmin := router.Group("api/admin/events")
