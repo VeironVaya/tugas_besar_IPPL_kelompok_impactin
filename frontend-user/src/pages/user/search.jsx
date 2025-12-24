@@ -1,39 +1,88 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
+import { getEventsAPI } from "../../api/event";
 
 export default function SearchEvent() {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // ambil query dari URL (?q=...)
+  /* ================= QUERY SEARCH ================= */
   const queryParams = new URLSearchParams(location.search);
-  const initialQuery = queryParams.get("q") || "";
+  const keyword = queryParams.get("q") || "";
 
-  const [keyword, setKeyword] = useState(initialQuery);
-
-  // sync jika URL berubah (penting!)
-  useEffect(() => {
-    setKeyword(initialQuery);
-  }, [initialQuery]);
+  /* ================= STATE ================= */
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedAges, setSelectedAges] = useState([]);
 
-  const toggleAge = (age) => {
+  /* ================= AGE OPTIONS ================= */
+  const AGE_OPTIONS = [
+    { label: "<16", send: "<16" },
+    { label: "16–20 Tahun", send: "16-20" },
+    { label: "21–30 Tahun", send: "21-30" },
+    { label: "31–40 Tahun", send: "31-40" },
+    { label: "41–45 Tahun", send: "41-45" },
+    { label: ">45", send: ">45" },
+  ];
+
+  /* ================= TOGGLE AGE (CHECKBOX) ================= */
+  const toggleAge = (ageObj) => {
     setSelectedAges((prev) =>
-      prev.includes(age) ? prev.filter((a) => a !== age) : [...prev, age]
+      prev.find((a) => a.label === ageObj.label)
+        ? prev.filter((a) => a.label !== ageObj.label)
+        : [...prev, ageObj]
     );
   };
 
-  const applyFilter = () => {
-    console.log("FILTER AKTIF:");
-    console.log("Category:", selectedCategory);
-    console.log("Ages:", selectedAges);
+  /* ================= FETCH SEARCH (INPUT SEARCH) ================= */
+  useEffect(() => {
+    if (!keyword) {
+      setEvents([]);
+      return;
+    }
 
-    // nanti di sini:
-    // - filter data frontend
-    // - atau fetch API pakai parameter filter
+    const fetchSearch = async () => {
+      setLoading(true);
+      try {
+        const res = await getEventsAPI({ search: keyword });
+        setEvents(res.data || []);
+      } catch (err) {
+        console.error(err);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSearch();
+  }, [keyword]);
+
+  /* ================= APPLY FILTER ================= */
+  const applyFilter = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+
+      if (keyword) params.search = keyword;
+      if (selectedCategory) params.category = selectedCategory;
+
+      // backend cuma bisa 1 age → ambil satu representatif
+      if (selectedAges.length > 0) {
+        params.age = selectedAges[0].send;
+      }
+
+      const res = await getEventsAPI(params);
+      setEvents(res.data || []);
+    } catch (err) {
+      console.error(err);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,24 +90,35 @@ export default function SearchEvent() {
       <Header />
 
       <div className="px-6 py-8 bg-green-50 min-h-screen">
-        {/* EMPTY STATE */}
         {!keyword && (
           <div className="text-center text-gray-500">
             Ketik sesuatu untuk mencari event...
           </div>
         )}
 
-        {/* SEARCH RESULT */}
         {keyword && (
           <div className="grid grid-cols-12 gap-6">
-            {/* FILTER */}
+            {/* ================= FILTER ================= */}
             <div className="col-span-3 bg-white shadow rounded-xl p-5 space-y-6">
               <h3 className="font-bold text-lg">Filter</h3>
 
-              {/* EVENT CATEGORY (RADIO) */}
+              {/* CATEGORY */}
               <div>
                 <h4 className="font-semibold mb-3">Event Category</h4>
                 <div className="space-y-2 text-sm">
+                  {/* ALL CATEGORY */}
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="category"
+                      checked={selectedCategory === ""}
+                      onChange={() => setSelectedCategory("")}
+                      className="accent-green-600"
+                    />
+                    <span>All Category</span>
+                  </label>
+
+                  {/* SPECIFIC CATEGORY */}
                   {["Environment", "Education", "Community", "Health"].map(
                     (cat) => (
                       <label
@@ -67,8 +127,7 @@ export default function SearchEvent() {
                       >
                         <input
                           type="radio"
-                          name="eventCategory"
-                          value={cat}
+                          name="category"
                           checked={selectedCategory === cat}
                           onChange={() => setSelectedCategory(cat)}
                           className="accent-green-600"
@@ -80,35 +139,29 @@ export default function SearchEvent() {
                 </div>
               </div>
 
-              {/* AGE RANGE (CHECKBOX) */}
+              {/* AGE */}
               <div>
                 <h4 className="font-semibold mb-3">Age Range</h4>
                 <div className="space-y-2 text-sm">
-                  {[
-                    "<16",
-                    "16–20 Tahun",
-                    "21–30 Tahun",
-                    "31–40 Tahun",
-                    "41–45 Tahun",
-                    ">45",
-                  ].map((age) => (
+                  {AGE_OPTIONS.map((age) => (
                     <label
-                      key={age}
+                      key={age.label}
                       className="flex items-center gap-2 cursor-pointer"
                     >
                       <input
                         type="checkbox"
-                        checked={selectedAges.includes(age)}
+                        checked={selectedAges.some(
+                          (a) => a.label === age.label
+                        )}
                         onChange={() => toggleAge(age)}
                         className="accent-green-600"
                       />
-                      <span>{age}</span>
+                      <span>{age.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* APPLY BUTTON */}
               <button
                 onClick={applyFilter}
                 className="w-full bg-green-700 hover:bg-green-800 text-white py-2 rounded-lg font-semibold transition"
@@ -117,26 +170,37 @@ export default function SearchEvent() {
               </button>
             </div>
 
-            {/* EVENT CARDS */}
+            {/* ================= EVENT LIST ================= */}
             <div className="col-span-9 grid grid-cols-3 gap-6">
-              {[...Array(9)].map((_, i) => (
+              {loading && (
+                <div className="col-span-3 text-center text-gray-500">
+                  Loading events...
+                </div>
+              )}
+
+              {!loading && events.length === 0 && (
+                <div className="col-span-3 text-center text-gray-500">
+                  Event tidak ditemukan
+                </div>
+              )}
+
+              {events.map((event) => (
                 <div
-                  key={i}
-                  className="bg-white rounded-xl shadow overflow-hidden"
+                  key={event.event_id}
+                  onClick={() => navigate(`/event/${event.event_id}`)}
+                  className="bg-white rounded-xl shadow overflow-hidden cursor-pointer hover:shadow-lg transition"
                 >
                   <img
-                    src="https://picsum.photos/400/250"
+                    src={event.cover_image}
                     className="w-full h-40 object-cover"
-                    alt="event"
+                    alt={event.title}
                   />
 
                   <div className="p-4">
-                    <h3 className="font-bold">DeepBlue Movement</h3>
-                    <p className="text-sm text-gray-600">
-                      The Legend of Blue Sea, Yogyakarta
-                    </p>
+                    <h3 className="font-bold">{event.title}</h3>
+                    <p className="text-sm text-gray-600">{event.location}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Sea Care Indonesia
+                      {event.host_name}
                     </p>
                   </div>
                 </div>

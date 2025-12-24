@@ -15,7 +15,6 @@ const Header = () => {
     if (!query.trim()) return;
 
     navigate(`/search?q=${encodeURIComponent(query)}`);
-    setQuery("");
   };
 
   return (
@@ -33,9 +32,15 @@ const Header = () => {
         {/* Search */}
         <form
           onSubmit={handleSearch}
-          className="relative flex items-center bg-emerald-100/70 
-                     rounded-full px-4 py-2 w-full max-w-md 
-                     focus-within:ring-2 focus-within:ring-emerald-400 transition"
+          className={`
+    relative flex items-center rounded-full px-4 py-2 w-full max-w-md 
+    transition
+    ${
+      query
+        ? "bg-emerald-200 ring-2 ring-emerald-500"
+        : "bg-emerald-100/70 focus-within:ring-2 focus-within:ring-emerald-400"
+    }
+  `}
         >
           <Search className="w-5 h-5 text-gray-600" />
           <input
@@ -43,7 +48,7 @@ const Header = () => {
             placeholder="Search event..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="ml-2 bg-transparent w-full text-sm 
+            className="ml-2 bg-transparent w-full text-sm  text-gray-800
                        placeholder-gray-600 focus:outline-none"
           />
         </form>

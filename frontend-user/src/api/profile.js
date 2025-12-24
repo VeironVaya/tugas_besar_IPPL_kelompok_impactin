@@ -9,3 +9,8 @@ export const updateProfileAPI = async (payload) => {
   const res = await api.patch("/user/profile", payload);
   return res.data;
 };
+
+export const changePasswordAPI = async (payload) => {
+  const res = await api.patch("/user/profile/password", payload);
+  return res.data;
+};

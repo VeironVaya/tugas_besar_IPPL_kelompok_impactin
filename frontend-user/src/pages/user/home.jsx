@@ -5,17 +5,9 @@ import Footer from "../../components/footer.jsx";
 import EventCard from "../../components/event_card.jsx";
 import HERO_IMAGE from "../../assets/hero news.png";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-import {
-  getAllEventsAPI,
-  getEventsCarouselAPI,
-} from "../../api/event";
+import { getAllEventsAPI, getEventsCarouselAPI } from "../../api/event";
 
-import {
-  Leaf,
-  BookOpen,
-  Users,
-  HeartPulse,
-} from "lucide-react";
+import { Leaf, BookOpen, Users, HeartPulse } from "lucide-react";
 
 /* ================= MOCK EVENTS (EVENT LIST ONLY) ================= */
 const mockEvents = [
@@ -85,9 +77,10 @@ const HomePage = () => {
         const mapped = res.data.map((e) => ({
           id: e.event_id,
           title: e.title,
-          date: new Date(e.start_date).toLocaleDateString("en-US", {
+          date: new Date(e.start_date).toLocaleDateString("en-GB", {
             month: "short",
             day: "2-digit",
+            year: "numeric",
           }),
           location: e.location,
           organizer: e.host_name,
@@ -105,47 +98,47 @@ const HomePage = () => {
   }, []);
 
   /* ================= FETCH HERO CAROUSEL ================= */
-useEffect(() => {
-  const fetchCarousel = async () => {
-    try {
-      console.log("👉 fetchCarousel CALLED");
+  useEffect(() => {
+    const fetchCarousel = async () => {
+      try {
+        console.log("👉 fetchCarousel CALLED");
 
-      const res = await getEventsCarouselAPI();
-      console.log("✅ RAW RESPONSE:", res);
+        const res = await getEventsCarouselAPI();
+        console.log("✅ RAW RESPONSE:", res);
 
-      const raw = res?.data || {};
-      console.log("📦 RAW DATA:", raw);
+        const raw = res?.data || {};
+        console.log("📦 RAW DATA:", raw);
 
-      const order = ["environment", "education", "community", "health"];
+        const order = ["environment", "education", "community", "health"];
 
-      const mapped = order
-        .map((key) => raw[key])
-        .filter(
-          (e) =>
-            e &&
-            typeof e === "object" &&
-            e.event_id &&
-            e.title &&
-            e.cover_image
-        )
-        .map((e) => ({
-          id: e.event_id,
-          title: e.title,
-          category: e.category,
-          imageUrl: e.cover_image,
-        }));
+        const mapped = order
+          .map((key) => raw[key])
+          .filter(
+            (e) =>
+              e &&
+              typeof e === "object" &&
+              e.event_id &&
+              e.title &&
+              e.cover_image
+          )
+          .map((e) => ({
+            id: e.event_id,
+            title: e.title,
+            category: e.category,
+            imageUrl: e.cover_image,
+          }));
 
-      console.log("🎯 MAPPED:", mapped);
+        console.log("🎯 MAPPED:", mapped);
 
-      setCarouselEvents(mapped);
-      setActiveSlide(0);
-    } catch (err) {
-      console.error("❌ Failed to fetch carousel:", err);
-    }
-  };
+        setCarouselEvents(mapped);
+        setActiveSlide(0);
+      } catch (err) {
+        console.error("❌ Failed to fetch carousel:", err);
+      }
+    };
 
-  fetchCarousel();
-}, []);
+    fetchCarousel();
+  }, []);
 
   /* ================= AUTO SLIDE ================= */
   useEffect(() => {
@@ -260,23 +253,59 @@ useEffect(() => {
         {/* ================= CATEGORY HIGHLIGHT ================= */}
         <section className="py-20">
           <div className="text-center max-w-7xl mx-auto px-6 lg:px-20">
-            <h2 className="text-3xl font-extrabold mb-6">
-              Focus Areas
-            </h2>
+            <h2 className="text-3xl font-extrabold mb-6">Focus Areas</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                { title: "Environment", Icon: Leaf },
-                { title: "Education", Icon: BookOpen },
-                { title: "Community", Icon: Users },
-                { title: "Health", Icon: HeartPulse },
-              ].map(({ title, Icon }) => (
+                {
+                  title: "Environment",
+                  Icon: Leaf,
+                  desc: "Protecting nature, climate action, and environmental sustainability.",
+                },
+                {
+                  title: "Education",
+                  Icon: BookOpen,
+                  desc: "Improving access to education, literacy, and lifelong learning.",
+                },
+                {
+                  title: "Community",
+                  Icon: Users,
+                  desc: "Strengthening communities through collaboration and social impact.",
+                },
+                {
+                  title: "Health",
+                  Icon: HeartPulse,
+                  desc: "Promoting physical and mental well-being for everyone.",
+                },
+              ].map(({ title, Icon, desc }) => (
                 <div
                   key={title}
-                  className="bg-white/10 rounded-3xl p-8 text-center"
+                  className="
+            relative group bg-white/10 rounded-3xl p-8 text-center
+            cursor-pointer overflow-hidden
+            transition-all duration-300
+            hover:-translate-y-2 hover:shadow-xl
+          "
                 >
-                  <Icon size={42} className="mx-auto mb-4" />
-                  <h3 className="text-xl font-bold">{title}</h3>
+                  {/* DEFAULT CONTENT */}
+                  <div className="transition-opacity duration-300 group-hover:opacity-0">
+                    <Icon size={42} className="mx-auto mb-4" />
+                    <h3 className="text-xl font-bold">{title}</h3>
+                  </div>
+
+                  {/* HOVER CONTENT */}
+                  <div
+                    className="
+              absolute inset-0 flex flex-col items-center justify-center
+              px-6 text-sm text-white
+              bg-green-800/90
+              opacity-0 group-hover:opacity-100
+              transition-opacity duration-300
+            "
+                  >
+                    <h3 className="text-xl font-bold mb-3">{title}</h3>
+                    <p className="leading-relaxed">{desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -295,9 +324,7 @@ useEffect(() => {
 
               return (
                 <div key={category} className="px-6 lg:px-20">
-                  <h2 className="text-2xl font-extrabold mb-10">
-                    {category}
-                  </h2>
+                  <h2 className="text-2xl font-extrabold mb-10">{category}</h2>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
                     {filtered.map((event) => (
