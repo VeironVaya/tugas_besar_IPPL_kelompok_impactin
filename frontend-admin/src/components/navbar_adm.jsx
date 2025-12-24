@@ -84,7 +84,7 @@ const AdminNavbar = () => {
                     setOpen(false);
                   }}
                 >
-                  Logout
+                  Sign out
                 </button>
               </div>
             )}
