@@ -3,11 +3,13 @@ package controllers
 import (
 	"backend/internal/app/dtos/request"
 	"backend/internal/app/services"
+	"errors"
 
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type ReportController struct {
@@ -76,5 +78,53 @@ func (c *ReportController) AdminGetAllReportedEvents(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"total": total,
 		"events": events,
+	})
+}
+
+func (c *ReportController) AdminGetReportedEventDetail(ctx *gin.Context) {
+	reportIDParam := ctx.Param("report_id")
+
+	reportID, err := strconv.Atoi(reportIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid report id"})
+		return
+	}
+
+	result, err := c.reportService.AdminGetReportDetail(uint(reportID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "report not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
+func (c *ReportController) ResolveReport(ctx *gin.Context) {
+	reportIDParam := ctx.Param("report_id")
+	reportID, err := strconv.Atoi(reportIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid report id"})
+		return
+	}
+
+	var req request.AdminResolveReportRequestDto
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	res, err := c.reportService.ResolveReport(uint(reportID), req)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "report resolved successfully",
+		"data":    res,
 	})
 }

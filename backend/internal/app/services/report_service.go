@@ -11,6 +11,8 @@ import (
 type ReportService interface {
 	CreateReportEvent(userID uint, eventID uint, dto request.ReportEventRequestDto,) (response.ReportEventResponseDto, error)
 	AdminGetAllReportedEvents(status, search string) ([]response.AdminReportedEventsResponseDto, int64, error)
+	AdminGetReportDetail(reportID uint) (*response.AdminReportedEventDetailResponseDto, error)
+	ResolveReport(reportID uint, req request.AdminResolveReportRequestDto) (*response.AdminResolveReportResponseDto, error)
 }
 
 type reportService struct {
@@ -103,4 +105,27 @@ func (s *reportService) AdminGetAllReportedEvents(status, search string) ([]resp
 	}
 
 	return s.reportRepo.AdminGetAllReportedEvents(status, search)
+}
+
+func (s *reportService) AdminGetReportDetail(reportID uint) (*response.AdminReportedEventDetailResponseDto, error) {
+	return s.reportRepo.AdminGetReportDetail(reportID)
+}
+
+func (s *reportService) ResolveReport(reportID uint, req request.AdminResolveReportRequestDto) (*response.AdminResolveReportResponseDto, error) {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return nil, errors.New("report not found")
+	}
+
+	err = s.reportRepo.ResolveReport(report, req.AdminResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.AdminResolveReportResponseDto{
+		ReportID:      report.ID,
+		Status:        report.Status,
+		AdminResponse: *report.AdminResponse,
+		RespondedAt:   *report.RespondedAt,
+	}, nil
 }
