@@ -20,7 +20,9 @@ type EventRepository interface {
    AdminGetAllEvents(status, search string) ([]response.AdminEventsResponseDto, int64, error)
    AdminGetEventDetail(eventID uint) (*response.EventResponseDto, error)
    UpdateApprovalStatus(event *models.Event) error
+   UpdateSubStatus(eventID uint, subStatus string) error
    IncrementParticipant(tx *gorm.DB, eventID uint) error
+   DecrementParticipant(eventID uint) error
    WithTx(fn func(tx *gorm.DB) error) error
 }
 
@@ -330,11 +332,24 @@ func (r *eventRepository) UpdateApprovalStatus(event *models.Event) error {
 		}).Error
 }
 
+func (r *eventRepository) UpdateSubStatus(eventID uint, subStatus string) error {
+	return r.db.Model(&models.Event{}).
+		Where("id = ?", eventID).
+		Update("sub_status", subStatus).Error
+}
+
+
 func (r *eventRepository) IncrementParticipant(tx *gorm.DB, eventID uint) error {
 	return tx.Model(&models.Event{}).
 		Where("id = ?", eventID).
 		UpdateColumn("current_participant", gorm.Expr("current_participant + 1")).
 		Error
+}
+
+func (r *eventRepository) DecrementParticipant(eventID uint) error {
+	return r.db.Model(&models.Event{}).
+		Where("id = ? AND current_participant > 0", eventID).
+		UpdateColumn("current_participant", gorm.Expr("current_participant - 1")).Error
 }
 
 func (r *eventRepository) WithTx(fn func(tx *gorm.DB) error) error {
