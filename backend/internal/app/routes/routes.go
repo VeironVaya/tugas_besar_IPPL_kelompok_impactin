@@ -42,6 +42,12 @@ func ReportRoutes(router *gin.Engine, reportController *controllers.ReportContro
 	{
 		r.POST("/report/:event_id", reportController.CreateEventReport)
 	}
+
+	authAdmin := router.Group("api/admin/events")
+	authAdmin.Use(utils.AdminAuth())
+	{
+		authAdmin.GET("/report", reportController.AdminGetAllReportedEvents)
+	}
 }
 
 func UserRoutes(router *gin.Engine, userController *controllers.UserController) {

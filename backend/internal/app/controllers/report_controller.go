@@ -55,3 +55,26 @@ func (c *ReportController) CreateEventReport(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusCreated, resp)
 }
+
+func (c *ReportController) AdminGetAllReportedEvents(ctx *gin.Context) {
+	search := ctx.Query("search")
+	status := ctx.Query("status")
+
+	if status == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "status is required (pending | resolved)",
+		})
+		return
+	}
+
+	events, total, err := c.reportService.AdminGetAllReportedEvents(status, search)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"total": total,
+		"events": events,
+	})
+}
