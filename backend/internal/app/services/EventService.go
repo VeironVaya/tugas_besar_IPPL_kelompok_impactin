@@ -9,6 +9,7 @@ import (
 	"backend/internal/app/dtos/response"
 	"backend/internal/app/models"
 	"backend/internal/app/repositories"
+	"backend/internal/app/utils"
 
 	"gorm.io/gorm"
 )
@@ -20,8 +21,9 @@ type EventService interface {
 	GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error)
 	GetCarouselEvents() (*response.EventCarouselResponseDto, error)
 	JoinEvent(userID, eventID uint) (response.JoinEventResponseDto, error)
-	AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error)
-	AdminGetApprovalEventDetail(eventID uint) (response.EventResponseDto, error)
+	AdminGetAllEvents(status, search string) ([]response.AdminEventsResponseDto, int64, error)
+	AdminGetEventDetail(eventID uint) (response.EventResponseDto, error)
+	AdminEventApproval(eventID uint, action string) (response.AdminEventApprovalResponseDto, error)
 }
 
 type eventService struct {
@@ -97,7 +99,6 @@ func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (re
 
 	event := models.Event{
 		UserID:        	  userID,
-		HostName: 		  *profile.Name,
 		Title:            dto.Title,
 		Category:         dto.Category,
 		Location:         dto.Location,
@@ -125,7 +126,7 @@ func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (re
 
 	return response.EventResponseDto{
 		UserID: 	userID,
-		HostName: 	event.HostName,
+		HostName: 	*profile.Name,
 		EventID:   	event.ID,
 		Title: 	   	event.Title,
 		Category:  	event.Category,
@@ -253,27 +254,25 @@ func (s *eventService) JoinEvent(userID, eventID uint) (response.JoinEventRespon
 	if err != nil {
 		return response.JoinEventResponseDto{}, errors.New("profile not found")
 	}
-	if *profile.Age <= 0 || profile.Age == nil {
+	if profile.UserID == event.UserID {
+		return response.JoinEventResponseDto{}, errors.New("cannot join your own event")
+	}
+	if profile.Age == nil || *profile.Age <= 0 {
 		return response.JoinEventResponseDto{}, errors.New("profile age must be completed before joining event")
 	}
 	if profile.Name == nil || strings.TrimSpace(*profile.Name) == "" {
 		return response.JoinEventResponseDto{}, errors.New("profile name must be completed before joining event")
 	}
-	if profile.UserID == event.UserID {
-		return response.JoinEventResponseDto{}, errors.New("cannot join your own event")
-	}
-	
-	age := *profile.Age
 
 	// 4. Age validation
 	switch {
 	case event.MinAge == 0 && event.MaxAge == 0:
 		// all ages allowed
-	case event.MinAge == 0 && age > event.MaxAge:
+	case event.MinAge == 0 && *profile.Age > event.MaxAge:
 		return response.JoinEventResponseDto{}, errors.New("age exceeds maximum limit")
-	case event.MaxAge == 0 && age < event.MinAge:
+	case event.MaxAge == 0 && *profile.Age < event.MinAge:
 		return response.JoinEventResponseDto{}, errors.New("age does not meet minimum requirement")
-	case age < event.MinAge || age > event.MaxAge:
+	case *profile.Age < event.MinAge || *profile.Age > event.MaxAge:
 		return response.JoinEventResponseDto{}, errors.New("age not within allowed range")
 	}
 
@@ -290,8 +289,6 @@ func (s *eventService) JoinEvent(userID, eventID uint) (response.JoinEventRespon
 	applicant := &models.Applicant{
 		EventID: eventID,
 		UserID:  userID,
-		Name: 	 *profile.Name,
-		Age: 	 *profile.Age,
 	}
 	if err := s.applicantRepo.Create(applicant); err != nil {
 		return response.JoinEventResponseDto{}, err
@@ -300,22 +297,32 @@ func (s *eventService) JoinEvent(userID, eventID uint) (response.JoinEventRespon
 	return response.JoinEventResponseDto{
 		EventID: applicant.EventID,
 		UserID:  applicant.UserID,
-		Name:	 applicant.Name,
-		Age: 	 applicant.Age,
+		Name:	 *profile.Name,
+		Age: 	 *profile.Age,
 		Message: "successfully joined event",
 	}, nil
 }
 
-func (s *eventService) AdminGetApprovalEvents(search string) ([]response.AdminEventApprovalResponse, int64, error) {
-	return s.eventRepo.AdminGetApprovalEvents(search)
+func (s *eventService) AdminGetAllEvents(status, search string) ([]response.AdminEventsResponseDto, int64, error) {
+	validStatus := map[string]bool{
+		"pending":  true,
+		"approved": true,
+		"declined": true,
+	}
+
+	if !validStatus[status] {
+		return nil, 0, errors.New("invalid status filter")
+	}
+
+	return s.eventRepo.AdminGetAllEvents(status, search)
 }
 
-func (s *eventService) AdminGetApprovalEventDetail(eventID uint) (response.EventResponseDto, error) {
+func (s *eventService) AdminGetEventDetail(eventID uint) (response.EventResponseDto, error) {
 
-	event, err := s.eventRepo.AdminGetApprovalEventDetail(eventID)
+	event, err := s.eventRepo.AdminGetEventDetail(eventID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return response.EventResponseDto{}, errors.New("pending event not found")
+			return response.EventResponseDto{}, errors.New("event not found")
 		}
 		return response.EventResponseDto{}, err
 	}
@@ -323,4 +330,44 @@ func (s *eventService) AdminGetApprovalEventDetail(eventID uint) (response.Event
 	event.Message = "success"
 
 	return *event, nil
+}
+
+func (s *eventService) AdminEventApproval(eventID uint, action string) (response.AdminEventApprovalResponseDto, error) {
+
+	event, err := s.eventRepo.GetEventByID(eventID)
+	if err != nil {
+		return response.AdminEventApprovalResponseDto{}, errors.New("event not found")
+	}
+
+	if event.Status != "pending" {
+		return response.AdminEventApprovalResponseDto{}, errors.New("event already processed")
+	}
+
+	switch action {
+	case "accept":
+		event.Status = "approved"
+		subStatus, err := utils.DetermineSubStatus(event.StartDate, event.StartTime, event.EndDate, event.EndTime)
+		if err != nil {
+			return response.AdminEventApprovalResponseDto{}, err
+		}
+		event.SubStatus = &subStatus
+
+	case "reject":
+		event.Status = "declined"
+		event.SubStatus = nil
+
+	default:
+		return response.AdminEventApprovalResponseDto{}, errors.New("invalid action")
+	}
+
+	if err := s.eventRepo.UpdateApprovalStatus(event); err != nil {
+		return response.AdminEventApprovalResponseDto{}, err
+	}
+
+	return response.AdminEventApprovalResponseDto{
+		EventID:   event.ID,
+		Status:    event.Status,
+		SubStatus: event.SubStatus,
+		Message:   "event successfully " + action + "ed",
+	}, nil
 }

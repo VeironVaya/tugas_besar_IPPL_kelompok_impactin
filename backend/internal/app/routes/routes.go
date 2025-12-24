@@ -26,8 +26,9 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 	authAdmin := router.Group("api/admin/events")
 	authAdmin.Use(utils.AdminAuth()) // JWT middleware
 	{
-		authAdmin.GET("/approval", eventController.AdminGetApprovalEvents)
-		authAdmin.GET("/approval/:event_id", eventController.AdminGetApprovalEventDetail)
+		authAdmin.GET("/", eventController.AdminGetAllEvents)
+		authAdmin.GET("/:event_id", eventController.AdminGetEventDetail)
+		authAdmin.PATCH("/approval/:event_id", eventController.AdminEventApproval)
 	}
 }
 
