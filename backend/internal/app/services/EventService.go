@@ -216,17 +216,37 @@ func (s *eventService) GetYourCreatedEvents(userID uint, status string) ([]respo
 }
 
 func (s *eventService) GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error) {
-	event, hostID, err := s.eventRepo.GetEventDetailByID(eventID)
+	event, hostID, groupLink, err := s.eventRepo.GetEventDetailByID(eventID)
 	if err != nil {
 		return nil, err
 	}
 
 	// default
 	event.IsHost = false
+	event.IsApplicant = false
+	event.IsParticipant = false
 	event.Message = "event detail retrieved successfully"
 
 	if userID == hostID {
 		event.IsHost = true
+		event.GroupLink = groupLink
+	}
+
+	appExist, err := s.applicantRepo.IsAlreadyApplicant(userID, eventID)
+	if err != nil {
+		return &response.EventDetailResponseDto{}, err
+	}
+	if appExist {
+		event.IsApplicant = true
+	}
+
+	parExist, err := s.participantRepo.IsAlreadyParticipant(userID, eventID)
+	if err != nil {
+		return &response.EventDetailResponseDto{}, err
+	}
+	if parExist {
+		event.IsParticipant = true
+		event.GroupLink = groupLink
 	}
 
 	return event, nil
