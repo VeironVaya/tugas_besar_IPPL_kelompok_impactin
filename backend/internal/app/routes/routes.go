@@ -36,6 +36,14 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 	}
 }
 
+func ReportRoutes(router *gin.Engine, reportController *controllers.ReportController) {
+	r := router.Group("/api/user/events")
+	r.Use(utils.Auth())
+	{
+		r.POST("/report/:event_id", reportController.CreateEventReport)
+	}
+}
+
 func UserRoutes(router *gin.Engine, userController *controllers.UserController) {
 	r := router.Group("/api/user")
 	{
@@ -44,7 +52,7 @@ func UserRoutes(router *gin.Engine, userController *controllers.UserController) 
 	}
 }
 
-func AdminRoutes(router *gin.Engine, adminController *controllers.AdminControler) {
+func AdminRoutes(router *gin.Engine, adminController *controllers.AdminController) {
 	r := router.Group("/api/admin")
 	{
 		r.POST("/login", adminController.Login)
@@ -54,7 +62,6 @@ func AdminRoutes(router *gin.Engine, adminController *controllers.AdminControler
 func ProfileRoutes(router *gin.Engine, profileController *controllers.ProfileController) {
 	r := router.Group("/api/user/profile")
 	r.Use(utils.Auth()) // JWT middleware
-
 	{
 		r.GET("/", profileController.GetProfile)
 		r.PATCH("/", profileController.EditProfileAndSkills)
@@ -66,10 +73,12 @@ func SetupAllRoutes(router *gin.Engine,
 	eventController *controllers.EventController,
 	userController *controllers.UserController,
 	profileController *controllers.ProfileController,
-	adminController *controllers.AdminControler,
+	adminController *controllers.AdminController,
+	reportController *controllers.ReportController,
 ) {
 	EventRoutes(router, eventController)
 	UserRoutes(router, userController)
 	ProfileRoutes(router, profileController)
 	AdminRoutes(router, adminController)
+	ReportRoutes(router, reportController)
 }

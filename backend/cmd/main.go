@@ -34,13 +34,18 @@ func main() {
 	adminRepo := repositories.NewAdminRepository(db)
 	adminSvc := services.NewAdminService(adminRepo)
 	adminCtrl := controllers.NewAdminController(adminSvc)
-	
+
 	// === Event wiring ===
 	eventRepo := repositories.NewEventRepository(db)
 	applicantRepo := repositories.NewApplicantRepository(db)
 	participantRepo := repositories.NewParticipantRepository(db)
 	eventSvc := services.NewEventService(eventRepo, profileRepo, applicantRepo, participantRepo)
 	eventCtrl := controllers.NewEventController(eventSvc, profileSvc)
+
+	// Report wiring
+	reportRepo := repositories.NewReportRepository(db)
+	reportSvc := services.NewReportService(reportRepo, eventRepo, participantRepo, profileRepo)
+	reportCtrl := controllers.NewReportController(reportSvc)
 
 	// Setup Gin router and routes
 	r := gin.Default()
@@ -52,6 +57,7 @@ func main() {
 		userCtrl,
 		profileCtrl,
 		adminCtrl,
+		reportCtrl,
 	)
 
 	// Start server
