@@ -15,6 +15,9 @@ type EventDetailResponseDto struct {
 	MinAge 		int 	`json:"min_age"`
 	MaxAge 		int 	`json:"max_age"`
 	IsHost 		bool 	`json:"is_host"`
+	IsApplicant bool	`json:"is_applicant"`
+	IsParticipant bool	`json:"is_participant"`
+	GroupLink	*string	`json:"group_link"`
 	Status		string	`json:"status"`
 	SubStatus	string	`json:"sub_status"`
 	Message 	string 	`json:"message"` 

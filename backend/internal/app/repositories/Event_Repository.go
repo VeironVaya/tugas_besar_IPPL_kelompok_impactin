@@ -14,7 +14,7 @@ type EventRepository interface {
    GetEventByID(eventID uint) (*models.Event, error)
    GetAllEvents(category, search string, ageRanges []string) ([]response.EventListResponseDto, error)
    GetYourCreatedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
-   GetEventDetailByID(eventID uint) (*response.EventDetailResponseDto, uint, error)
+   GetEventDetailByID(eventID uint) (*response.EventDetailResponseDto, uint, *string, error)
    GetCarouselEvents() (map[string]*response.EventCarouselItemDto, error)
    GetEventForJoin(eventID uint) (*response.EventJoinCheckDto, error)
    AdminGetAllEvents(status, search string) ([]response.AdminEventsResponseDto, int64, error)
@@ -143,9 +143,10 @@ func (r *eventRepository) GetYourCreatedEvents(userID uint, status string) ([]re
 	return events, err
 }
 
-func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetailResponseDto, uint, error) {
+func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetailResponseDto, uint, *string, error) {
 	var event response.EventDetailResponseDto
 	var hostID uint
+	var groupLink string
 
 	query := r.db.Table("events").
 		Select(`
@@ -171,7 +172,18 @@ func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetai
 		Take(&event)
 
 	if query.Error != nil {
-		return nil, 0, query.Error
+		return nil, 0, nil, query.Error
+	}
+
+	// Ambil group link terpisah
+	queryGroup := r.db.
+		Table("events").
+		Select("group_link").
+		Where("id = ?", eventID).
+		Scan(&groupLink).Error
+
+	if queryGroup != nil {
+		return nil, 0, nil, queryGroup
 	}
 
 	// Ambil host id terpisah
@@ -182,10 +194,10 @@ func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetai
 		Scan(&hostID).Error
 
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, nil, err
 	}
 
-	return &event, hostID, nil
+	return &event, hostID, &groupLink, nil
 }
 
 func (r *eventRepository) GetCarouselEvents() (map[string]*response.EventCarouselItemDto, error) {
