@@ -38,7 +38,8 @@ func main() {
 	// === Event wiring ===
 	eventRepo := repositories.NewEventRepository(db)
 	applicantRepo := repositories.NewApplicantRepository(db)
-	eventSvc := services.NewEventService(eventRepo, profileRepo, applicantRepo)
+	participantRepo := repositories.NewParticipantRepository(db)
+	eventSvc := services.NewEventService(eventRepo, profileRepo, applicantRepo, participantRepo)
 	eventCtrl := controllers.NewEventController(eventSvc, profileSvc)
 
 	// Setup Gin router and routes
