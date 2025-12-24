@@ -2,61 +2,63 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Users, Search } from "lucide-react";
 import AdminNavbar from "../../components/navbar_adm.jsx";
 import TableOverview from "../../components/table_overview.jsx";
-
-const mockEvents = [
-  { id: "1", title: "BlueWave Coastal Restoration", status: "approved" },
-  { id: "2", title: "Urban Forest Revival", status: "declined" },
-];
+import api from "../../api/api"; // import axios instance
 
 const AcceptedPage = () => {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("approved");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [firstHeaderHeight, setFirstHeaderHeight] = useState(0);
   const firstHeaderRef = useRef(null);
 
-  // FILTER + SEARCH LOGIC
+  // Fetch events when filter changes
+  useEffect(() => {
+    setLoading(true);
+    api.get(`/admin/events?status=${filter}`)
+      .then((res) => {
+        // Make sure it's always an array
+        setEvents(res.data?.events || []);
+      })
+      .catch((err) => {
+        console.error(err);
+        setEvents([]);
+      })
+      .finally(() => setLoading(false));
+  }, [filter]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-
-    const baseFiltered = mockEvents.filter(
-      (e) => e.status.toLowerCase() === filter.toLowerCase()
-    );
-
-    if (!q) return baseFiltered;
-
-    return baseFiltered.filter(
+    if (!q) return events;
+    return events.filter(
       (e) =>
-        String(e.id).toLowerCase().includes(q) ||
+        String(e.event_id).toLowerCase().includes(q) ||
         e.title.toLowerCase().includes(q)
     );
-  }, [query, filter]);
+  }, [query, events]);
 
-  // measure header height on mount and on resize
+  // measure header height on mount and resize
   useEffect(() => {
     const measure = () => {
       if (firstHeaderRef.current) {
         setFirstHeaderHeight(firstHeaderRef.current.offsetHeight || 0);
       }
     };
-
-    measure(); // initial
+    measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  // ensure top is a number (navbar assumed 64px height)
   const navbarHeight = 64;
   const topOffset = navbarHeight + (Number(firstHeaderHeight) || 0);
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white shadow-sm">
         <AdminNavbar />
       </nav>
 
       <main className="max-w-[1500px] mx-auto px-6 py-8">
-        {/* removed overflow-hidden so sticky works correctly */}
         <div className="bg-white rounded-xl shadow-lg">
 
           {/* FIRST STICKY HEADER */}
@@ -68,9 +70,8 @@ const AcceptedPage = () => {
               <div className="p-3 bg-blue-50 rounded-full">
                 <Users className="w-6 h-6 text-blue-600" />
               </div>
-
               <div>
-                <div className="text-sm text-gray-500">Total Events:</div>
+                <div className="text-sm text-gray-500">Total Event:</div>
                 <div className="text-xl font-bold text-gray-900">
                   {filtered.length}
                   <span className="text-base font-medium text-gray-600">
@@ -132,11 +133,15 @@ const AcceptedPage = () => {
 
           {/* TABLE CONTENT */}
           <div>
-            {filtered.length > 0 ? (
+            {loading ? (
+              <div className="py-10 text-center text-gray-500 text-sm">
+                Loading events...
+              </div>
+            ) : filtered.length > 0 ? (
               filtered.map((event, idx) => (
                 <TableOverview
-                  key={event.id ?? idx} // event.id is unique in mockEvents above
-                  eventId={event.id}
+                  key={event.event_id ?? idx}
+                  eventId={event.event_id}
                   eventTitle={event.title}
                 />
               ))
@@ -144,7 +149,7 @@ const AcceptedPage = () => {
               <div className="py-10 text-center text-gray-500 text-sm">
                 {filter === "approved"
                   ? "There are no approved events"
-                  : "There are no events that were declined"}
+                  : "There are no declined events"}
               </div>
             )}
           </div>

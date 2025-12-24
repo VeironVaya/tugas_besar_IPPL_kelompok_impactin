@@ -1,39 +1,32 @@
+// src/api/api.js
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "/api", // relative path for Vite proxy
 });
 
-/* ================= REQUEST ================= */
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+/* ===== REQUEST INTERCEPTOR ===== */
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token && !config.url.includes("/login")) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-  if (token && !config.url.includes("/login")) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
-
-/* ================= RESPONSE ================= */
+/* ===== RESPONSE INTERCEPTOR ===== */
 api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      // 🔥 TOKEN EXPIRED / INVALID
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
       localStorage.removeItem("token");
       window.location.href = "/Login_adm";
     }
-    return Promise.reject(err);
+    return Promise.reject(error);
   }
 );
-
-/* ================= AUTH ================= */
-export const loginApi = (username, password) => {
-  return api.post("/api/admin/login", {
-    username,
-    password,
-  });
-};
 
 export default api;

@@ -2,33 +2,56 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Users, Search } from "lucide-react";
 import AdminNavbar from "../../components/navbar_adm";
 import TableApproval from "../../components/table_approval";
-import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-
-const sampleEvents = [
-  { id: "1", title: "DeepBlue Movement" },
-];
+import { getPendingEvents } from "../../api/event";
 
 const ApprovalPage = () => {
   const [query, setQuery] = useState("");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [firstHeaderHeight, setFirstHeaderHeight] = useState(0);
   const firstHeaderRef = useRef(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return sampleEvents;
+  useEffect(() => {
+    getPendingEvents()
+      .then((res) => {
+        console.log("API response:", res.data);
+        // Ensure events is always an array
+        setEvents(res.data?.events || []);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Failed to load events");
+        setEvents([]); // fallback to empty array
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-    return sampleEvents.filter(
-      (e) =>
-        String(e.id).toLowerCase().includes(q) ||
-        e.title.toLowerCase().includes(q)
+  const filtered = useMemo(() => {
+    const e = events || [];
+    const q = query.trim().toLowerCase();
+    if (!q) return e;
+
+    return e.filter(
+      (ev) =>
+        String(ev.event_id).includes(q) ||
+        ev.title.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, events]);
 
   useEffect(() => {
     if (firstHeaderRef.current) {
       setFirstHeaderHeight(firstHeaderRef.current.offsetHeight);
     }
   }, []);
+
+  if (loading) {
+    return <div className="p-6 text-center">Loading events...</div>;
+  }
+
+  if (error) {
+    return <div className="p-6 text-center text-red-500">{error}</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -38,7 +61,6 @@ const ApprovalPage = () => {
 
       <main className="max-w-[1500px] mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow-lg">
-
           {/* First sticky header */}
           <div
             ref={firstHeaderRef}
@@ -73,7 +95,7 @@ const ApprovalPage = () => {
             </div>
           </div>
 
-          {/* Table header (sticky below first header) */}
+          {/* Table header */}
           <div
             className="sticky z-30 bg-gray-600 text-white py-4 px-6 grid grid-cols-[180px_1fr_200px] items-center"
             style={{ top: 64 + firstHeaderHeight }}
@@ -83,13 +105,14 @@ const ApprovalPage = () => {
             <div></div>
           </div>
 
+          {/* Table content */}
           <div>
             {filtered.length > 0 ? (
               filtered.map((ev) => (
                 <TableApproval
-                  key={ev.id}
-                  eventId={ev.id}
-                  eventTitle={ev.title}
+                  key={ev.event_id}
+                  event_id={ev.event_id} 
+                  title={ev.title}        
                 />
               ))
             ) : (

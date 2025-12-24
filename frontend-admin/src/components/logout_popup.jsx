@@ -27,7 +27,7 @@ const LogoutPopUp = ({ open, onClose, onConfirm }) => {
           </div>
 
           <h2 className="text-lg font-semibold text-gray-800">
-            Are you sure you want to log out?
+            Are you sure you want to Sign out?
           </h2>
         </div>
 
@@ -36,7 +36,7 @@ const LogoutPopUp = ({ open, onClose, onConfirm }) => {
             onClick={onConfirm}
             className="px-5 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
           >
-            Log out
+            Sign out
           </button>
 
           <button
