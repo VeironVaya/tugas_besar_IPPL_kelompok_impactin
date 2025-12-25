@@ -30,6 +30,7 @@ type EventRepository interface {
    GetApplicantsByEventID(eventID uint) ([]response.EventUserDto, error)
    GetParticipantsByEventID(eventID uint) ([]response.EventUserDto, error)
    GetJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
+   GetCompletedEventsByParticipant(userID uint) ([]response.ProfileCompletedEventDto, error)
 }
 
 type eventRepository struct {
@@ -469,6 +470,28 @@ func (r *eventRepository) GetJoinedEvents(userID uint, status string) ([]respons
 			events.status,
 			events.sub_status,
 			profiles.name AS host_name
+		`).
+		Order("events.start_date DESC").
+		Scan(&events).Error
+
+	return events, err
+}
+
+func (r *eventRepository) GetCompletedEventsByParticipant(userID uint) ([]response.ProfileCompletedEventDto, error) {
+	var events []response.ProfileCompletedEventDto
+
+	err := r.db.Table("participants").
+		Joins("JOIN events ON events.id = participants.event_id").
+		Joins("JOIN profiles ON profiles.user_id = events.user_id").
+		Where("participants.user_id = ?", userID).
+		Where("events.sub_status = ?", "completed").
+		Select(`
+			events.id AS event_id,
+			events.title,
+			profiles.name AS creator,
+			events.start_date,
+			events.description,
+			events.cover_image
 		`).
 		Order("events.start_date DESC").
 		Scan(&events).Error

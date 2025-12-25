@@ -4,6 +4,7 @@ import (
 	"backend/internal/app/dtos/request"
 	"backend/internal/app/services"
 	"net/http"
+	"strconv"
 
 	"backend/internal/app/utils"
 
@@ -19,16 +20,24 @@ func NewProfileController(ps services.ProfileService) *ProfileController {
 }
 
 func (c *ProfileController) GetProfile(ctx *gin.Context) {
-	userID, _ := utils.GetUserIDFromContext(ctx)
+	viewerID, _ := utils.GetUserIDFromContext(ctx)
 
-	resp, err := c.profileService.GetProfile(userID)
+	userIDParam := ctx.Param("user_id")
+	userID, err := strconv.Atoi(userIDParam)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	resp, err := c.profileService.GetProfileDetail(uint(userID), viewerID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, resp)
 }
+
 
 
 func (c *ProfileController) EditProfileAndSkills(ctx *gin.Context) {

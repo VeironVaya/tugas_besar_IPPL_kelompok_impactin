@@ -21,31 +21,32 @@ func main() {
 	db := config.InitDB()
 	SeedAdmin(db)
 
-	// === User, Skill & Profile wiring ===
+	// === Repository ===
 	userRepo := repositories.NewUserRepository(db)
 	profileRepo := repositories.NewProfileRepository(db)
 	skillRepo := repositories.NewSkillRepository(db)
-	userSvc := services.NewUserService(userRepo, profileRepo)
-	userCtrl := controllers.NewUserController(userSvc)
-	profileSvc := services.NewProfileService(profileRepo, userRepo, skillRepo)
-	profileCtrl := controllers.NewProfileController(profileSvc)
-
-	// === Admin wiring ===
 	adminRepo := repositories.NewAdminRepository(db)
-	adminSvc := services.NewAdminService(adminRepo)
-	adminCtrl := controllers.NewAdminController(adminSvc)
-
-	// === Event wiring ===
 	eventRepo := repositories.NewEventRepository(db)
 	applicantRepo := repositories.NewApplicantRepository(db)
 	participantRepo := repositories.NewParticipantRepository(db)
-	eventSvc := services.NewEventService(eventRepo, profileRepo, applicantRepo, participantRepo)
-	eventCtrl := controllers.NewEventController(eventSvc, profileSvc)
-
-	// Report wiring
 	reportRepo := repositories.NewReportRepository(db)
+	expRepo := repositories.NewExperienceRepository(db)
+
+	// === Service ===
+	userSvc := services.NewUserService(userRepo, profileRepo)
+	profileSvc := services.NewProfileService(profileRepo, userRepo, skillRepo, eventRepo, expRepo)
+	eventSvc := services.NewEventService(eventRepo, profileRepo, applicantRepo, participantRepo)
+	adminSvc := services.NewAdminService(adminRepo)
 	reportSvc := services.NewReportService(reportRepo, eventRepo, participantRepo, profileRepo)
+	expSvc := services.NewExperienceService(expRepo)
+
+	// === Controller ===
+	userCtrl := controllers.NewUserController(userSvc)
+	profileCtrl := controllers.NewProfileController(profileSvc)
+	adminCtrl := controllers.NewAdminController(adminSvc)
+	eventCtrl := controllers.NewEventController(eventSvc, profileSvc)
 	reportCtrl := controllers.NewReportController(reportSvc)
+	expCtrl := controllers.NewExperienceController(expSvc)
 
 	// Setup Gin router and routes
 	r := gin.Default()
@@ -58,6 +59,7 @@ func main() {
 		profileCtrl,
 		adminCtrl,
 		reportCtrl,
+		expCtrl,
 	)
 
 	// Start server
