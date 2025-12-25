@@ -15,7 +15,7 @@ const SearchBar = () => {
     <input
       type="text"
       placeholder="Search Event"
-      className="w-72 px-4 py-2 rounded-full border bg-white"
+      className="w-72 px-4 py-2 rounded-full border bg-black"
       value={search}
       onChange={(e) => setSearch(e.target.value)}
       onKeyDown={handleKeyDown}

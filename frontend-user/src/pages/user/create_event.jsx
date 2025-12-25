@@ -5,8 +5,6 @@ import { createEventAPI } from "../../api/event";
 import { useNavigate } from "react-router-dom";
 import { uploadImageToCloudinary } from "../../api/cloudinary";
 
-
-
 export default function CreateEvent() {
   const [formData, setFormData] = useState({
     title: "",
@@ -39,46 +37,86 @@ export default function CreateEvent() {
 
   const navigate = useNavigate();
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const [errors, setErrors] = useState({});
 
-  try {
-    let imageUrl = "https://example.com/default.jpg";
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // ================= VALIDATION LOG =================
+    const newErrors = {};
 
-    if (formData.coverImage) {
-      imageUrl = await uploadImageToCloudinary(formData.coverImage);
+    if (!formData.title) newErrors.title = "Title is required";
+    if (!formData.category) newErrors.category = "Category is required";
+    if (!formData.location) newErrors.location = "Location is required";
+    if (!formData.address) newErrors.address = "Address is required";
+    if (!formData.addressLink)
+      newErrors.addressLink = "Address link is required";
+    if (!formData.startDate) newErrors.startDate = "Start date is required";
+    if (!formData.endDate) newErrors.endDate = "End date is required";
+    if (!formData.startTime) newErrors.startTime = "Start time is required";
+    if (!formData.endTime) newErrors.endTime = "End time is required";
+    if (!formData.maxParticipant || formData.maxParticipant < 1)
+      newErrors.maxParticipant = "Max participant must be at least 1";
+    if (!formData.coverImage) newErrors.coverImage = "Cover image is required";
+    if (!formData.description)
+      newErrors.description = "Description is required";
+    if (!formData.minAge) newErrors.minAge = "Minimum age is required";
+    if (!formData.maxAge) newErrors.maxAge = "Maximum age is required";
+    if (!formData.groupLink) newErrors.groupLink = "Group link is required";
+
+    // ⏰ VALIDASI JAM
+    if (formData.startTime && formData.endTime) {
+      const start = new Date(`1970-01-01T${formData.startTime}`);
+      const end = new Date(`1970-01-01T${formData.endTime}`);
+
+      if (start >= end) {
+        newErrors.time = "Start time must be earlier than end time";
+      }
     }
 
-    const payload = {
-      title: formData.title,
-      category: formData.category,
-      location: formData.location,
-      specific_address: formData.address,
-      address_link: formData.addressLink,
-      start_date: formData.startDate,
-      end_date: formData.endDate,
-      start_time: formData.startTime,
-      end_time: formData.endTime,
-      max_participant: Number(formData.maxParticipant),
-      cover_image: imageUrl, // 🔥 URL dari Cloudinary
-      description: formData.description,
-      terms: formData.terms,
-      min_age: Number(formData.minAge),
-      max_age: Number(formData.maxAge),
-      group_link: formData.groupLink,
-    };
+    // LOG ERROR KE CONSOLE
+    if (Object.keys(newErrors).length > 0) {
+      console.error("❌ FORM VALIDATION ERROR:", newErrors);
+      setErrors(newErrors);
+      alert("Form tidak valid. Cek console untuk detail error.");
+      return;
+    }
+    // ==================================================
 
-    await createEventAPI(payload);
+    try {
+      let imageUrl = "https://example.com/default.jpg";
 
-    alert("Event created successfully 🎉");
-    navigate("/your-event");
-  } catch (err) {
-    console.error(err);
-    alert("Failed to create event");
-  }
-};
+      if (formData.coverImage) {
+        imageUrl = await uploadImageToCloudinary(formData.coverImage);
+      }
 
+      const payload = {
+        title: formData.title,
+        category: formData.category,
+        location: formData.location,
+        specific_address: formData.address,
+        address_link: formData.addressLink,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        start_time: formData.startTime,
+        end_time: formData.endTime,
+        max_participant: Number(formData.maxParticipant),
+        cover_image: imageUrl, // 🔥 URL dari Cloudinary
+        description: formData.description,
+        terms: formData.terms,
+        min_age: Number(formData.minAge),
+        max_age: Number(formData.maxAge),
+        group_link: formData.groupLink,
+      };
 
+      await createEventAPI(payload);
+
+      alert("Event created successfully 🎉");
+      navigate("/your-event");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create event");
+    }
+  };
 
   return (
     <>
@@ -251,7 +289,6 @@ const handleSubmit = async (e) => {
               <div className="space-y-5 mt-4">
                 <div>
                   <label className="text-sm font-medium">
-        
                     Maximum Participant*
                   </label>
                   <input
@@ -311,7 +348,7 @@ const handleSubmit = async (e) => {
                     <input
                       type="number"
                       name="minAge"
-                      min={1}
+                      min={0}
                       value={formData.minAge}
                       onChange={handleChange}
                       className="w-full p-3 border rounded-lg mt-1"
@@ -324,7 +361,7 @@ const handleSubmit = async (e) => {
                     <input
                       type="number"
                       name="maxAge"
-                      min={1}
+                      min={0}
                       value={formData.maxAge}
                       onChange={handleChange}
                       className="w-full p-3 border rounded-lg mt-1"

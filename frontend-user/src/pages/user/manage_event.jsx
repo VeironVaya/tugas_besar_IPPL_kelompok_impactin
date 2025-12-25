@@ -83,12 +83,7 @@ const ManageEventPage = () => {
               Cancel Event
             </button>
 
-            <button
-              onClick={() => navigate(-1)}
-              className="ml-auto px-4 py-2 bg-gray-400 text-white rounded-lg hover:opacity-90"
-            >
-              Back
-            </button>
+           
           </div>
 
           {/* MAIN GRID */}
