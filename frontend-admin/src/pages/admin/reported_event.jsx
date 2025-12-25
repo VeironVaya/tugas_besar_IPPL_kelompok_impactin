@@ -2,47 +2,59 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Users, Search } from "lucide-react";
 import AdminNavbar from "../../components/navbar_adm";
 import TableReport from "../../components/table_report";
+import { getReports } from "../../api/report";
 
-const sampleReport = [
-  { reportId: "1", reportDate: "17/10/2025", reporterName: "Ipan", status: "pending" },
-  { reportId: "2", reportDate: "17/10/2025", reporterName: "Veiron", status: "resolved" },
-];
 
 const ReportedPage = () => {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("pending");
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(false);
+
 
   const [firstHeaderHeight, setFirstHeaderHeight] = useState(0);
   const firstHeaderRef = useRef(null);
 
   // FILTER + SEARCH
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+  const q = query.trim().toLowerCase();
+  if (!q) return reports;
 
-    const base = sampleReport.filter((e) => e.status === filter);
+  return reports.filter(
+    (e) =>
+      e.reportId.toLowerCase().includes(q) ||
+      e.reportDate.toLowerCase().includes(q) ||
+      e.reporterName.toLowerCase().includes(q)
+  );
+}, [query, reports]);
 
-    if (!q) return base;
-
-    return base.filter(
-      (e) =>
-        e.reportId.toLowerCase().includes(q) ||
-        e.reportDate.toLowerCase().includes(q) ||
-        e.reporterName.toLowerCase().includes(q)
-    );
-  }, [query, filter]);
 
   // MEASURE FIRST HEADER HEIGHT
   useEffect(() => {
-    const measure = () => {
-      if (firstHeaderRef.current) {
-        setFirstHeaderHeight(firstHeaderRef.current.offsetHeight || 0);
-      }
-    };
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const res = await getReports(filter);
 
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
+      // Map backend → frontend shape
+      const mapped = res.data.events.map((r) => ({
+        reportId: String(r.report_id),
+        reportDate: new Date(r.reported_date).toLocaleDateString("id-ID"),
+        reporterName: r.reporter_name,
+      }));
+
+      setReports(mapped);
+    } catch (err) {
+      console.error("Failed to fetch reports:", err);
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchReports();
+}, [filter]);
+
 
   const navbarHeight = 64;
   const topOffset = navbarHeight + (Number(firstHeaderHeight) || 0);
@@ -129,7 +141,11 @@ const ReportedPage = () => {
 
           {/* TABLE ROWS */}
           <div>
-            {filtered.length > 0 ? (
+            {loading ? (
+            <div className="py-10 text-center text-gray-500 text-sm">
+              Loading reports...
+            </div>
+          ) : filtered.length > 0 ? (
               filtered.map((rep, idx) => (
                 <TableReport
                   key={rep.reportId ?? idx}

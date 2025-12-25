@@ -1,34 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AdminNavbar from "../../components/navbar_adm";
 import CancelEventPopUp from "../../components/cancel_event.jsx";
-
-const sampleReports = [
-  {
-    id: "1",
-    reporter: "Ipan",
-    date: "17/10/2025",
-    eventId: "10337320",
-    eventName: "DeepBlue Movement",
-    creator: "Sea Care Indonesia",
-    description:
-      "event palsu saya dan beberapa participiant sudah datang ke tempat lalu tidak ada satupun dari pihak penyelenggara yang datang",
-    status: "pending",
-  },
-  {
-    id: "2",
-    reporter: "Veiron",
-    date: "17/10/2025",
-    eventId: "10337320",
-    eventName: "DeepBlue Movement",
-    creator: "Sea Care Indonesia",
-    description:
-      "Event palsu. Saya dan beberapa participant sudah datang ke tempat sesuai jadwal, namun setelah menunggu hampir satu jam, tidak ada satupun dari pihak penyelenggara yang muncul atau memberikan informasi. Kami mencoba menghubungi kontak yang tertera di poster, tetapi nomor tersebut tidak aktif. Beberapa peserta lain juga terlihat bingung dan akhirnya pulang begitu saja. Hal ini sangat mengecewakan karena kami sudah meluangkan waktu dan biaya untuk hadir. Mohon agar pihak Impactin dapat menindaklanjuti dan melakukan verifikasi terhadap penyelenggara agar kejadian serupa tidak terjadi lagi di masa mendatang.event palsu saya dan beberapa participiant sudah datang ke tempat lalu tidak ada satupun dari pihak penyelenggara yang datang",
-    status: "resolved",
-    resolvedOn: "18/10/2025",
-    adminNotes: "Sudah diperiksa dan diputuskan tidak melakukan tindakan"
-  }
-];
+import { getReportDetail, resolveReport } from "../../api/report";
+import { cancelEvent } from "../../api/event";
 
 const Field = ({ label, children }) => (
   <div className="space-y-1">
@@ -42,24 +17,120 @@ const Field = ({ label, children }) => (
 const ReportDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const report = sampleReports.find((r) => r.id === String(id));
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const MAX_NOTES = 500;
   const WARNING_THRESHOLD = 490;
-
-  const isResolved = report?.status === "resolved";
-
-  const [adminNotes, setAdminNotes] = useState(report?.adminNotes || "");
+  const [adminNotes, setAdminNotes] = useState("");
+  const isResolved = report?.reportStatus === "resolved";
   const [openCancelModal, setOpenCancelModal] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const isEventCancelled = report?.eventSubStatus === "cancelled";
+  const isEventCompleted = report?.eventSubStatus === "completed";
+  const canCancelEvent = !isEventCancelled && !isEventCompleted;
 
-  if (!report) return <div className="p-6">Report not found.</div>;
+  useEffect(() => {
+  const fetchDetail = async () => {
+    try {
+      setLoading(true);
+      const res = await getReportDetail(id);
 
-  const handleResolve = () => {
-    if (!adminNotes.trim()) {
-      alert("Please fill admin notes before resolving");
-      return;
+      // Map backend → frontend
+      const resData = res.data;
+      const mapped = {
+        id: String(resData.report_id),
+        reporter: resData.reporter_name,
+        date: new Date(resData.reported_date).toLocaleDateString("id-ID"),
+        eventId: String(resData.event_id),
+        eventName: resData.event_title,
+        creator: resData.host_name,
+        description: resData.description,
+
+        reportStatus: resData.report_status,
+        eventStatus: resData.event_status,
+        eventSubStatus: resData.event_sub_status,
+
+        resolvedOn: resData.responded_date
+          ? new Date(resData.responded_date).toLocaleString("en-GB", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })
+          : null,
+      };
+
+      setReport(mapped);
+      setAdminNotes(resData.admin_response ?? "");
+
+      setReport(mapped);
+    } catch (err) {
+      console.error("Failed to fetch report detail:", err);
+      setReport(null);
+    } finally {
+      setLoading(false);
     }
-    console.log("Resolved with notes:", adminNotes);
   };
+
+  fetchDetail();
+}, [id]);
+
+  if (loading) {
+    return <div className="p-6">Loading report detail...</div>;
+  }
+  if (!report) {
+    return <div className="p-6">Report not found.</div>;
+  }
+
+  const handleCancelEvent = async () => {
+      try {
+        await cancelEvent(report.eventId);
+
+        setReport((prev) => ({
+          ...prev,
+          eventSubStatus: "cancelled",
+        }));
+
+        alert("Event cancelled successfully");
+      } catch (err) {
+        console.error("Failed to cancel event:", err);
+        alert("Failed to cancel event");
+      } finally {
+        setOpenCancelModal(false);
+      }
+    };
+
+    const handleResolve = async () => {
+      if (!adminNotes.trim()) {
+        alert("Please fill admin notes before resolving");
+        return;
+      }
+
+      try {
+        setResolving(true);
+
+        const res = await resolveReport(report.id, adminNotes);
+
+        setReport((prev) => ({
+          ...prev,
+          status: res.data.data.status,
+          resolvedOn: new Date(res.data.data.responded_at).toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          }),
+        }));
+
+        setAdminNotes(res.data.data.admin_response);
+
+        alert("Report resolved successfully");
+      } catch (err) {
+        console.error("Failed to resolve report:", err);
+        alert("Failed to resolve report");
+      } finally {
+        setResolving(false);
+      }
+    };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -110,18 +181,38 @@ const ReportDetailPage = () => {
           {!isResolved ? (
             <div className="flex justify-between pt-3">
               <button
-                className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                disabled={!canCancelEvent}
+                className={`px-6 py-2 rounded text-white transition
+                  ${
+                    canCancelEvent
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-gray-300 cursor-not-allowed"
+                  }
+                `}
                 onClick={() => setOpenCancelModal(true)}
               >
                 Cancel Event
               </button>
+              {!canCancelEvent && (
+                <p className="text-xs text-red-600">
+                  Event cannot be cancelled because it&apos;s already{" "}
+                  {isEventCompleted ? "completed" : "cancelled"}.
+                </p>
+              )}
 
               <div className="flex gap-3">
                 <button
-                  className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                  disabled={resolving}
+                  className={`px-6 py-2 rounded text-white transition
+                    ${
+                      resolving
+                        ? "bg-green-300 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700"
+                    }
+                  `}
                   onClick={handleResolve}
                 >
-                  Resolve
+                  {resolving ? "Resolving..." : "Resolve"}
                 </button>
 
                 <button
@@ -134,7 +225,7 @@ const ReportDetailPage = () => {
             </div>
           ) : (
             <div className="mt-1 text-base font-semibold text-gray-800">
-              Resolved on: {report.resolvedOn}
+              Resolved{report.resolvedOn ? ` on: ${report.resolvedOn}` : ""}
             </div>
           )}
 
@@ -144,14 +235,7 @@ const ReportDetailPage = () => {
       <CancelEventPopUp
         open={openCancelModal}
         onClose={() => setOpenCancelModal(false)}
-        onConfirm={(reason) => {
-          if (!reason.trim()) {
-            alert("Please fill reason of cancellation");
-            return;
-          }
-          console.log("Cancelled with reason:", reason);
-          setOpenCancelModal(false);
-        }}
+        onConfirm={handleCancelEvent}
       />
     </div>
   );
