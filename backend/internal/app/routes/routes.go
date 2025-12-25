@@ -19,6 +19,7 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 	{
 		auth.POST("/", eventController.CreateEvent)
 		auth.GET("/your", eventController.GetYourCreatedEvents)
+		auth.GET("/your/:event_id", eventController.GetYourCreatedEventDetail)
 		auth.GET("/:event_id", eventController.GetEventDetail)
 		auth.POST("/join/:event_id", eventController.JoinEvent)
 		auth.PATCH("/applicants/:event_id", eventController.HostApplicantApproval)

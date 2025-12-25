@@ -3,6 +3,7 @@ package repositories
 import (
 	"backend/internal/app/dtos/response"
 	"backend/internal/app/models"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -24,6 +25,9 @@ type EventRepository interface {
    IncrementParticipant(tx *gorm.DB, eventID uint) error
    DecrementParticipant(eventID uint) error
    WithTx(fn func(tx *gorm.DB) error) error
+   GetEventByIDAndHost(eventID, userID uint) (*models.Event, error)
+   GetApplicantsByEventID(eventID uint) ([]response.EventUserDto, error)
+   GetParticipantsByEventID(eventID uint) ([]response.EventUserDto, error)
 }
 
 type eventRepository struct {
@@ -376,4 +380,44 @@ func (r *eventRepository) WithTx(fn func(tx *gorm.DB) error) error {
 		return err
 	}
 	return tx.Commit().Error
+}
+
+func (r *eventRepository) GetEventByIDAndHost(eventID, userID uint) (*models.Event, error) {
+	var event models.Event
+
+	err := r.db.
+		Where("id = ? AND user_id = ?", eventID, userID).
+		First(&event).Error
+
+	if err != nil {
+		return nil, errors.New("event not found or not owned by user")
+	}
+
+	return &event, nil
+}
+
+func (r *eventRepository) GetApplicantsByEventID(eventID uint) ([]response.EventUserDto, error) {
+	var applicants []response.EventUserDto
+
+	err := r.db.
+		Table("applicants").
+		Select("applicants.user_id, profiles.name").
+		Joins("JOIN profiles ON profiles.user_id = applicants.user_id").
+		Where("applicants.event_id = ?", eventID).
+		Scan(&applicants).Error
+
+	return applicants, err
+}
+
+func (r *eventRepository) GetParticipantsByEventID(eventID uint) ([]response.EventUserDto, error) {
+	var participants []response.EventUserDto
+
+	err := r.db.
+		Table("participants").
+		Select("participants.user_id, profiles.name").
+		Joins("JOIN profiles ON profiles.user_id = participants.user_id").
+		Where("participants.event_id = ?", eventID).
+		Scan(&participants).Error
+
+	return participants, err
 }
