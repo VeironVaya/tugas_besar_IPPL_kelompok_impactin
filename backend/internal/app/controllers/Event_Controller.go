@@ -105,6 +105,32 @@ func (c *EventController) GetYourCreatedEvents(ctx *gin.Context) {
 	})
 }
 
+func (c *EventController) GetYourCreatedEventDetail(ctx *gin.Context) {
+	uid, exists := ctx.Get("user_id")
+	eventIDParam := ctx.Param("event_id")
+
+	if !exists {
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+
+	eventID, err := strconv.Atoi(eventIDParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		return
+	}
+
+	result, err := c.eventService.GetYourCreatedEventDetail(uid.(uint), uint(eventID))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
 func (c *EventController) GetEventDetail(ctx *gin.Context) {
     uid, exists := ctx.Get("user_id")
 	eventIDParam := ctx.Param("event_id")
