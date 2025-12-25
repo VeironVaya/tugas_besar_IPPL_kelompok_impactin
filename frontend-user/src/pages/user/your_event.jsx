@@ -13,6 +13,12 @@ const YourEventPage = () => {
 
   const [createdEvents, setCreatedEvents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
 
   /* ================= DUMMY JOINED EVENTS ================= */
   const joinedEvents = [
@@ -30,11 +36,9 @@ const YourEventPage = () => {
     try {
       setLoading(true);
 
-      // completed = approved + sub_status completed
-      const apiStatus = filterValue === "completed" ? "approved" : filterValue;
-
+      // 🔑 status = keyword backend (MODE)
       const res = await api.get("/user/events/your", {
-        params: { status: apiStatus },
+        params: { status: filterValue },
       });
 
       let mapped =
@@ -43,23 +47,28 @@ const YourEventPage = () => {
           title: e.title,
           organizer: e.host_name,
           location: e.location,
-          date: new Date(e.start_date).toLocaleDateString("id-ID", {
-            month: "long",
-            year: "numeric",
-          }),
+          date: formatDate(e.start_date),
+
           status: e.status,
-          subStatus: e.sub_status, // ⬅️ PENTING
+          subStatus: e.sub_status,
         })) || [];
 
-      // FRONTEND FILTERING FOR COMPLETED
-      if (filterValue === "completed") {
-        mapped = mapped.filter((e) => e.subStatus === "completed");
+      // ✅ FRONTEND FILTER MINIMAL (ANTI ERROR DATA)
+      if (filterValue === "approved") {
+        mapped = mapped.filter((e) => e.subStatus === "opened");
       }
 
-      // APPROVED TAPI BUKAN COMPLETED
-      if (filterValue === "approved") {
-        mapped = mapped.filter((e) => e.subStatus !== "completed");
+      if (filterValue === "pending") {
+        mapped = mapped.filter((e) => e.status === "pending");
       }
+
+      if (filterValue === "declined") {
+        mapped = mapped.filter((e) => e.status === "declined");
+      }
+
+      // ❗ cancelled & completed
+      // backend SUDAH kirim data BENAR
+      // TIDAK perlu difilter ulang
 
       setCreatedEvents(mapped);
     } catch (err) {
@@ -82,11 +91,30 @@ const YourEventPage = () => {
 
   /* ================= HANDLER ================= */
   const handleView = (id, isHost) => {
-    if (isHost) {
-      navigate(`/manage-event/${id}`);
-    } else {
-      navigate(`/event/${id}`);
+    navigate(isHost ? `/manage-event/${id}` : `/event/${id}`);
+  };
+
+  const getBadgeLabel = (event) => {
+    if (filter === "approved") {
+      return event.subStatus; // opened / completed
     }
+    return filter;
+  };
+
+  const getBadgeClass = (event) => {
+    if (filter === "approved") {
+      if (event.subStatus === "completed") return "bg-gray-200 text-gray-700";
+      if (event.subStatus === "cancelled") return "bg-red-100 text-red-700";
+      return "bg-green-100 text-green-700"; // opened
+    }
+
+    // selain approved → ikut filter
+    if (filter === "pending") return "bg-yellow-100 text-yellow-700";
+    if (filter === "declined") return "bg-red-200 text-red-800";
+    if (filter === "cancelled") return "bg-red-100 text-red-700";
+    if (filter === "completed") return "bg-gray-200 text-gray-700";
+
+    return "bg-gray-100 text-gray-600";
   };
 
   return (
@@ -172,19 +200,11 @@ const YourEventPage = () => {
 
                     {menu === "created" && (
                       <span
-                        className={`inline-block mt-2 px-3 py-1 text-xs rounded-full ${
-                          event.subStatus === "completed"
-                            ? "bg-gray-200 text-gray-700"
-                            : event.status === "approved"
-                            ? "bg-green-100 text-green-700"
-                            : event.status === "pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
+                        className={`inline-block mt-2 px-3 py-1 text-xs rounded-full ${getBadgeClass(
+                          event
+                        )}`}
                       >
-                        {event.subStatus === "completed"
-                          ? "completed"
-                          : event.status}
+                        {getBadgeLabel(event)}
                       </span>
                     )}
                   </div>
@@ -195,7 +215,7 @@ const YourEventPage = () => {
 
                     {menu === "created" &&
                       event.status === "approved" &&
-                      event.subStatus !== "completed" && (
+                      event.subStatus === "opened" && (
                         <button
                           className="px-4 py-2 bg-green-700 text-white rounded-lg mt-3"
                           onClick={() => handleView(event.id, true)}
@@ -204,11 +224,12 @@ const YourEventPage = () => {
                         </button>
                       )}
 
-                    {menu === "created" && event.subStatus === "completed" && (
-                      <p className="mt-3 text-sm text-gray-400 italic">
-                        Event telah selesai
-                      </p>
-                    )}
+                    {menu === "created" &&
+                      ["cancelled", "completed"].includes(event.subStatus) && (
+                        <p className="mt-3 text-sm text-gray-400 italic">
+                          Event telah {event.subStatus}
+                        </p>
+                      )}
                   </div>
                 </div>
               ))}

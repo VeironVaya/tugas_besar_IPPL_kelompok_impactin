@@ -29,12 +29,15 @@ export const getEventsAPI = async (params = {}) => {
 };
 
 export const reportEventAPI = async (eventId, description) => {
-  const res = await api.post(
-    `/user/events/report/${eventId}`,
-    {
-      description,
-    }
-  );
+  const res = await api.post(`/user/events/report/${eventId}`, {
+    description,
+  });
 
   return res.data;
 };
+
+export const joinEventAPI = async (eventId) => {
+  const res = await api.post(`/user/events/join/${eventId}`);
+  return res.data;
+};
+

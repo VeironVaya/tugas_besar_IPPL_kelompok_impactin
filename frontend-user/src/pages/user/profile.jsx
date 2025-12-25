@@ -184,7 +184,7 @@ const ProfilePage = () => {
     } catch (err) {
       console.error(err);
 
-      const msg = err.response?.data?.message || "Paword change failed";
+      const msg = err.response?.data?.message || "Input minimal 6 characters ";
 
       alert(msg);
     }
@@ -206,7 +206,6 @@ const ProfilePage = () => {
   return (
     <>
       <Header />
-
       <div className="min-h-screen bg-green-50 px-6 py-10">
         <div className="max-w-6xl mx-auto">
           {/* ================= PROFILE HEADER ================= */}
@@ -373,7 +372,6 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
-
       {showChangePwModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl w-full max-w-md">
@@ -453,8 +451,6 @@ const ProfilePage = () => {
         </div>
       )}
       console.log("IMAGE FROM API:", res.image_url);
-
-
       <Footer />
     </>
   );
