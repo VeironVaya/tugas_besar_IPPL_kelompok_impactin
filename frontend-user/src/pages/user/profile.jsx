@@ -16,7 +16,8 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await getProfileAPI();
+        const userId = localStorage.getItem("user_id");
+const res = await getProfileAPI(userId);
 
         setProfile({
           name: res.name,
