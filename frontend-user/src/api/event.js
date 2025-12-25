@@ -27,3 +27,14 @@ export const getEventsAPI = async (params = {}) => {
   });
   return res.data;
 };
+
+export const reportEventAPI = async (eventId, description) => {
+  const res = await api.post(
+    `/user/events/report/${eventId}`,
+    {
+      description,
+    }
+  );
+
+  return res.data;
+};

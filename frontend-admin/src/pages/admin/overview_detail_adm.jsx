@@ -7,8 +7,6 @@ import {
   getEventDeclinedDetail,
 } from "../../api/event";
 
-
-
 const Field = ({ label, children }) => (
   <div className="space-y-1">
     <label className="text-xs font-semibold text-gray-600">{label}</label>
@@ -33,7 +31,6 @@ const OverviewDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const navigate = useNavigate();
-
 
   useEffect(() => {
     setLoading(true);
@@ -93,15 +90,25 @@ const OverviewDetailPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Maximum Participant">
-              {event.max_participant}
-            </Field>
+            <Field label="Maximum Participant">{event.max_participant}</Field>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-600">Event Cover</label>
+              <label className="text-xs font-semibold text-gray-600">
+                Event Cover
+              </label>
               <div className="border rounded-md px-3 py-2 bg-gray-100 flex items-center gap-3">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M16 3v4M8 3v4" />
+                <svg
+                  className="w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M16 3v4M8 3v4"
+                  />
                 </svg>
                 <a
                   href={event.cover_image}
@@ -154,27 +161,26 @@ const OverviewDetailPage = () => {
             </div>
           </div>
 
-         <div className="flex justify-end gap-3">
-          <button
-            disabled={event.status !== "approved"}
-            className={`px-6 py-2 rounded text-white ${
-              event.status === "approved"
-                ? "bg-red-600"
-                : "bg-gray-400 cursor-not-allowed"
-            }`}
-            onClick={() => setOpenCancelModal(true)}
-          >
-            Cancel Event
-          </button>
+          <div className="flex justify-end gap-3">
+            <button
+              disabled={event.status !== "approved"}
+              className={`px-6 py-2 rounded text-white ${
+                event.status === "approved"
+                  ? "bg-red-600"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
+              onClick={() => setOpenCancelModal(true)}
+            >
+              Cancel Event
+            </button>
 
-          <button
-            className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
-            onClick={() => navigate(-1)}
-          >
-            Close
-          </button>
-        </div>
-
+            <button
+              className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+              onClick={() => navigate(-1)}
+            >
+              Close
+            </button>
+          </div>
 
           <CancelEventPopUp
             open={openCancelModal}

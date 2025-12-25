@@ -119,24 +119,28 @@ const YourEventPage = () => {
             <h2 className="font-bold text-lg mb-4">Created Event</h2>
 
             <ul className="space-y-2">
-              {["approved", "pending", "cancelled", "declined", "completed"].map(
-                (i) => (
-                  <li
-                    key={i}
-                    className={`cursor-pointer transition ${
-                      menu === "created" && filter === i
-                        ? "font-bold text-green-600"
-                        : "text-gray-600 hover:text-green-600"
-                    }`}
-                    onClick={() => {
-                      setMenu("created");
-                      setFilter(i);
-                    }}
-                  >
-                    {i.charAt(0).toUpperCase() + i.slice(1)}
-                  </li>
-                )
-              )}
+              {[
+                "approved",
+                "pending",
+                "cancelled",
+                "declined",
+                "completed",
+              ].map((i) => (
+                <li
+                  key={i}
+                  className={`cursor-pointer transition ${
+                    menu === "created" && filter === i
+                      ? "font-bold text-green-600"
+                      : "text-gray-600 hover:text-green-600"
+                  }`}
+                  onClick={() => {
+                    setMenu("created");
+                    setFilter(i);
+                  }}
+                >
+                  {i.charAt(0).toUpperCase() + i.slice(1)}
+                </li>
+              ))}
             </ul>
           </div>
 
