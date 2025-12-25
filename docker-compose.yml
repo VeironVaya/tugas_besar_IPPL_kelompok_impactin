@@ -2,21 +2,6 @@ version: '3.8'
 
 services:
 
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: impactin-phpmyadmin
-    environment:
-      PMA_HOST: mysql
-      PMA_USER: impactin_user
-      PMA_PASSWORD: impactin_pass
-    ports:
-      - "8081:80"
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - impactin-network
-
   mysql:
     image: mysql:8.0
     container_name: impactin-mysql
@@ -56,41 +41,6 @@ services:
         condition: service_healthy
     networks:
       - impactin-network
-
-
-
-  frontend_admin:
-    build:
-      context: ./frontend-admin
-      dockerfile: Dockerfile
-    container_name: impactin-frontend-admin
-    volumes:
-      - ./frontend-admin/src:/app/src
-    ports:
-      - "5173:5173"
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    depends_on:
-      - backend
-    networks:
-      - impactin-network
-
-  frontend_user:
-    build:
-      context: ./frontend-user
-      dockerfile: Dockerfile
-    container_name: impactin-frontend-user
-    volumes:
-      - ./frontend-user/src:/app/src
-    ports:
-      - "5174:5174"
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    depends_on:
-      - backend
-    networks:
-      - impactin-network
-
 
 volumes:
   mysql_data:
