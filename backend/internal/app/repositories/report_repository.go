@@ -93,9 +93,11 @@ func (r *reportRepository) AdminGetReportDetail(reportID uint) (*response.AdminR
 			events.title AS event_title,
 
 			profiles.name AS host_name,
+			events.status AS event_status,
+			events.sub_status AS event_sub_status,
 
 			reports.description,
-			reports.status,
+			reports.status AS report_status,
 			reports.admin_response,
 			reports.responded_at AS responded_date
 		`).

@@ -201,6 +201,7 @@ func (s *eventService) GetYourCreatedEvents(userID uint, status string) ([]respo
 		"approved":  true,
 		"declined":  true,
 		"cancelled": true,
+		"completed": true,
 	}
 
 	if !validStatus[status] {
