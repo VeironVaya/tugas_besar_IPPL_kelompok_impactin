@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-import { getEventDetailAPI, reportEventAPI } from "../../api/event";
+import {
+  getEventDetailAPI,
+  reportEventAPI,
+  joinEventAPI,
+} from "../../api/event";
 
 import { MapPin, Calendar, Clock, Users, TriangleAlert } from "lucide-react";
 
 const EventDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +49,7 @@ const EventDetailPage = () => {
       try {
         const res = await getEventDetailAPI(id);
 
-        setEvent({
+        const mappedEvent = {
           id: res.event_id,
           title: res.title,
           organizer: res.host_name,
@@ -60,22 +65,22 @@ const EventDetailPage = () => {
           description: res.description,
           termsAndConditions: res.terms,
 
-          // 🔑 FLAG BARU
           isHost: res.is_host,
           isApplicant: res.is_applicant,
           isParticipant: res.is_participant,
 
-          // 🔗 GROUP LINK
           groupLink: res.group_link,
 
           status: res.status,
           subStatus: res.sub_status,
-        });
+        };
+
+        setEvent(mappedEvent);
 
         setJoined(
-          res.is_host === true ||
-            res.status === "pending" ||
-            res.status === "approved"
+          mappedEvent.isHost ||
+            mappedEvent.isApplicant ||
+            mappedEvent.isParticipant
         );
       } catch (err) {
         console.error("Fetch event detail failed:", err);
@@ -86,6 +91,35 @@ const EventDetailPage = () => {
 
     fetchEvent();
   }, [id]);
+
+  /* ================= JOIN EVENT (GET API) ================= */
+  const handleJoinEvent = async () => {
+    try {
+      await joinEventAPI(id);
+
+      setEvent((prev) => ({
+        ...prev,
+        isApplicant: true,
+        status: "pending",
+      }));
+
+      setJoined(true);
+    } catch (err) {
+      const message = err.response?.data?.message || "";
+
+      // 🚨 PROFILE BELUM LENGKAP
+      if (
+        err.response?.status === 400 &&
+        message.toLowerCase().includes("profile")
+      ) {
+        alert("Please complete your profile before joining this event.");
+        navigate("/profile");
+        return;
+      }
+
+      alert(message || "Failed to join event");
+    }
+  };
 
   if (loading) {
     return (
@@ -199,6 +233,7 @@ const EventDetailPage = () => {
         {/* JOIN */}
         <div className="p-8 flex justify-end">
           <button
+            onClick={!joined ? handleJoinEvent : undefined}
             disabled={joined}
             className={`px-10 py-3 rounded-lg font-bold transition
               ${
@@ -209,29 +244,13 @@ const EventDetailPage = () => {
           >
             {event.isHost
               ? "YOU ARE THE HOST"
-              : event.status === "pending"
-              ? "WAITING FOR APPROVAL"
-              : event.status === "approved"
+              : event.isParticipant
               ? "JOINED"
+              : event.isApplicant
+              ? "WAITING FOR APPROVAL"
               : "JOIN EVENT"}
           </button>
         </div>
-
-        {/* TERMS MODAL */}
-        {showTerms && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl max-w-xl">
-              <h2 className="text-2xl font-bold mb-4">Terms & Conditions</h2>
-              <p className="whitespace-pre-line">{event.termsAndConditions}</p>
-              <button
-                onClick={() => setShowTerms(false)}
-                className="mt-6 px-6 py-2 bg-green-600 text-white rounded-lg"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* REPORT MODAL */}
         {showReport && (
