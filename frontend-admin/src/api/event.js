@@ -33,3 +33,9 @@ export const getEventDeclinedDetail = (event_id) => {
 export const updateEventStatus = (event_id, action) => {
   return api.patch(`/admin/events/approval/${event_id}`, { action });
 };
+
+// Cancel an approved event
+export const cancelEvent = (event_id) => {
+  return api.patch(`/admin/events/cancel/${event_id}`);
+};
+

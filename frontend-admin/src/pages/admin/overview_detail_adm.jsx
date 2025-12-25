@@ -6,6 +6,8 @@ import {
   getEventApprovedDetail,
   getEventDeclinedDetail,
 } from "../../api/event";
+import { cancelEvent } from "../../api/event";
+
 
 
 
@@ -33,6 +35,11 @@ const OverviewDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const navigate = useNavigate();
+  const isCancelable =
+  event?.status === "approved" &&
+  !["cancelled", "completed"].includes(event?.sub_status);
+
+
 
 
   useEffect(() => {
@@ -156,10 +163,10 @@ const OverviewDetailPage = () => {
 
          <div className="flex justify-end gap-3">
           <button
-            disabled={event.status !== "approved"}
+            disabled={!isCancelable}
             className={`px-6 py-2 rounded text-white ${
-              event.status === "approved"
-                ? "bg-red-600"
+              isCancelable
+                ? "bg-red-600 hover:bg-red-700"
                 : "bg-gray-400 cursor-not-allowed"
             }`}
             onClick={() => setOpenCancelModal(true)}
@@ -179,10 +186,18 @@ const OverviewDetailPage = () => {
           <CancelEventPopUp
             open={openCancelModal}
             onClose={() => setOpenCancelModal(false)}
-            onConfirm={() => {
-              console.log("Cancelled");
+            onConfirm={async () => {
+            try {
+              await cancelEvent(event.event_id);
               setOpenCancelModal(false);
-            }}
+              // optional: redirect or refresh
+              navigate(-1);
+              // OR refetch event detail if you prefer
+            } catch (error) {
+              console.error("Failed to cancel event:", error);
+              alert("Failed to cancel event. Please try again.");
+            }
+          }}
           />
         </div>
       </div>
