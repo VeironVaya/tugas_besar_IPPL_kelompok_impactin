@@ -18,6 +18,7 @@ type EventService interface {
 	CreateEvent(userID uint, dto request.EventRequestDto) (response.EventResponseDto, error)
 	GetAllEvents(category, search string, ageRanges []string) ([]response.EventListResponseDto, error)
 	GetYourCreatedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
+	GetYourCreatedEventDetail(userID, eventID uint) (*response.YourCreatedEventDetailResponseDto, error)
 	GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error)
 	GetCarouselEvents() (*response.EventCarouselResponseDto, error)
 	JoinEvent(userID, eventID uint) (response.JoinEventResponseDto, error)
@@ -201,6 +202,7 @@ func (s *eventService) GetYourCreatedEvents(userID uint, status string) ([]respo
 		"approved":  true,
 		"declined":  true,
 		"cancelled": true,
+		"completed": true,
 	}
 
 	if !validStatus[status] {
@@ -214,6 +216,49 @@ func (s *eventService) GetYourCreatedEvents(userID uint, status string) ([]respo
 
 	return events, nil
 }
+
+func (s *eventService) GetYourCreatedEventDetail(userID, eventID uint) (*response.YourCreatedEventDetailResponseDto, error) {
+
+	// 1. Ambil event (sekalian validasi ini milik host)
+	event, err := s.eventRepo.GetEventByIDAndHost(eventID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if event.Status != "approved" {
+		return nil, errors.New("event is not approved")
+	}
+
+	if *event.SubStatus != "opened" && *event.SubStatus != "closed" {
+		return nil, errors.New("event detail cannot be accessed in this state")
+	}
+
+	// 2. Ambil applicants
+	applicants, err := s.eventRepo.GetApplicantsByEventID(eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Ambil participants
+	participants, err := s.eventRepo.GetParticipantsByEventID(eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.YourCreatedEventDetailResponseDto{
+		EventID:            event.ID,
+		Title:              event.Title,
+		Location:           event.Location,
+		StartDate:          event.StartDate,
+		CurrentParticipant: event.CurrentParticipant,
+		MaxParticipant: 	event.MaxParticipant,	
+		Status:             event.Status,
+		SubStatus:          *event.SubStatus,
+		Applicants:         applicants,
+		Participants:       participants,
+	}, nil
+}
+
 
 func (s *eventService) GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error) {
 	event, hostID, groupLink, err := s.eventRepo.GetEventDetailByID(eventID)

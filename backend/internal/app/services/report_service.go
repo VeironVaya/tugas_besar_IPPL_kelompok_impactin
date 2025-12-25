@@ -10,6 +10,9 @@ import (
 
 type ReportService interface {
 	CreateReportEvent(userID uint, eventID uint, dto request.ReportEventRequestDto,) (response.ReportEventResponseDto, error)
+	AdminGetAllReportedEvents(status, search string) ([]response.AdminReportedEventsResponseDto, int64, error)
+	AdminGetReportDetail(reportID uint) (*response.AdminReportedEventDetailResponseDto, error)
+	ResolveReport(reportID uint, req request.AdminResolveReportRequestDto) (*response.AdminResolveReportResponseDto, error)
 }
 
 type reportService struct {
@@ -88,5 +91,41 @@ func (s *reportService) CreateReportEvent(userID uint, eventID uint, dto request
 		HostName:    *hostProfile.Name,
 		Description: report.Description,
 		ReportedAt:  report.CreatedAt.Format("2006-01-02"),
+	}, nil
+}
+
+func (s *reportService) AdminGetAllReportedEvents(status, search string) ([]response.AdminReportedEventsResponseDto, int64, error) {
+	validStatus := map[string]bool{
+		"pending": true,
+		"resolved": true,
+	}
+
+	if !validStatus[status] {
+		return nil, 0, errors.New("invalid status filter")
+	}
+
+	return s.reportRepo.AdminGetAllReportedEvents(status, search)
+}
+
+func (s *reportService) AdminGetReportDetail(reportID uint) (*response.AdminReportedEventDetailResponseDto, error) {
+	return s.reportRepo.AdminGetReportDetail(reportID)
+}
+
+func (s *reportService) ResolveReport(reportID uint, req request.AdminResolveReportRequestDto) (*response.AdminResolveReportResponseDto, error) {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return nil, errors.New("report not found")
+	}
+
+	err = s.reportRepo.ResolveReport(report, req.AdminResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.AdminResolveReportResponseDto{
+		ReportID:      report.ID,
+		Status:        report.Status,
+		AdminResponse: *report.AdminResponse,
+		RespondedAt:   *report.RespondedAt,
 	}, nil
 }

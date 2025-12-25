@@ -19,6 +19,7 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 	{
 		auth.POST("/", eventController.CreateEvent)
 		auth.GET("/your", eventController.GetYourCreatedEvents)
+		auth.GET("/your/:event_id", eventController.GetYourCreatedEventDetail)
 		auth.GET("/:event_id", eventController.GetEventDetail)
 		auth.POST("/join/:event_id", eventController.JoinEvent)
 		auth.PATCH("/applicants/:event_id", eventController.HostApplicantApproval)
@@ -41,6 +42,14 @@ func ReportRoutes(router *gin.Engine, reportController *controllers.ReportContro
 	r.Use(utils.Auth())
 	{
 		r.POST("/report/:event_id", reportController.CreateEventReport)
+	}
+
+	authAdmin := router.Group("api/admin/events")
+	authAdmin.Use(utils.AdminAuth())
+	{
+		authAdmin.GET("/report", reportController.AdminGetAllReportedEvents)
+		authAdmin.GET("/report/:report_id", reportController.AdminGetReportedEventDetail)
+		authAdmin.PATCH("/report/resolve/:report_id", reportController.ResolveReport)
 	}
 }
 
