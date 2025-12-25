@@ -8,6 +8,49 @@ export default function SearchEvent() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  /* ================= AGE HELPERS ================= */
+  const parseAgeRange = (str) => {
+    if (!str) return null;
+
+    const clean = str
+      .replace(/\s/g, "") // hapus spasi
+      .replace("–", "-") // en-dash → dash
+      .replace("—", "-"); // em-dash → dash
+
+    if (clean === "<16") return { min: 0, max: 15 };
+    if (clean === ">45") return { min: 46, max: Infinity };
+
+    const parts = clean.split("-");
+    if (parts.length !== 2) return null;
+
+    const min = Number(parts[0]);
+    const max = Number(parts[1]);
+
+    if (isNaN(min) || isNaN(max)) return null;
+
+    return { min, max };
+  };
+
+  const filterEventsByAge = (events, selectedAges) => {
+    if (!selectedAges.length) return events;
+
+    return events.filter((event) => {
+      if (!event.age_restriction) return false;
+
+      const eventRange = parseAgeRange(event.age_restriction);
+      if (!eventRange) return false;
+
+      return selectedAges.some((age) => {
+        const filterRange = parseAgeRange(age.send);
+        if (!filterRange) return false;
+
+        return isOverlap(eventRange, filterRange);
+      });
+    });
+  };
+
+  const isOverlap = (a, b) => a.min <= b.max && a.max >= b.min;
+
   /* ================= QUERY SEARCH ================= */
   const queryParams = new URLSearchParams(location.search);
   const keyword = queryParams.get("q") || "";
@@ -65,17 +108,18 @@ export default function SearchEvent() {
   const applyFilter = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = new URLSearchParams();
 
-      if (keyword) params.search = keyword;
-      if (selectedCategory) params.category = selectedCategory;
+      if (keyword) params.append("search", keyword);
+      if (selectedCategory) params.append("category", selectedCategory);
 
-      // backend cuma bisa 1 age → ambil satu representatif
-      if (selectedAges.length > 0) {
-        params.age = selectedAges[0].send;
-      }
+      // ✅ append age satu-satu
+      selectedAges.forEach((age) => {
+        params.append("age", age.send);
+      });
 
       const res = await getEventsAPI(params);
+
       setEvents(res.data || []);
     } catch (err) {
       console.error(err);
