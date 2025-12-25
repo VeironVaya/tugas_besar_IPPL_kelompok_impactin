@@ -30,6 +30,7 @@ type EventService interface {
 	CancelEvent(eventID uint, userID *uint, adminID *uint) (response.CancelEventResponseDto, error)
 	CloseEvent(userID, eventID uint) (response.EventSubStatusUpdateResponseDto, error)
 	OpenEvent(userID, eventID uint) (response.EventSubStatusUpdateResponseDto, error)
+	GetYourJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
 }
 
 type eventService struct {
@@ -766,4 +767,25 @@ func (s *eventService) OpenEvent(userID, eventID uint) (response.EventSubStatusU
 		SubStatus: "opened",
 		Message:   "event successfully opened",
 	}, nil
+}
+
+func (s *eventService) GetYourJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error) {
+	validStatus := map[string]bool{
+		"all":   true,
+		"ongoing":  true,
+		"upcoming":  true,
+		"completed": true,
+		"cancelled": true,
+	}
+
+	if !validStatus[status] {
+		return nil, errors.New("invalid status filter")
+	}
+
+	events, err := s.eventRepo.GetJoinedEvents(userID, status)
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
 }
