@@ -31,6 +31,7 @@ type EventService interface {
 	CloseEvent(userID, eventID uint) (response.EventSubStatusUpdateResponseDto, error)
 	OpenEvent(userID, eventID uint) (response.EventSubStatusUpdateResponseDto, error)
 	GetYourJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
+	AutoUpdateEventSubStatus() error
 }
 
 type eventService struct {
@@ -788,4 +789,29 @@ func (s *eventService) GetYourJoinedEvents(userID uint, status string) ([]respon
 	}
 
 	return events, nil
+}
+
+// event_service.go
+func (s *eventService) AutoUpdateEventSubStatus() error {
+	events, err := s.eventRepo.GetApprovedEvents()
+	if err != nil {
+		return err
+	}
+
+	for _, event := range events {
+		newSubStatus, err := utils.DetermineSubStatus(
+			event.StartDate,
+			event.StartTime,
+			event.EndDate,
+			event.EndTime,
+		)
+		if err != nil {
+			continue
+		}
+
+		if event.SubStatus != nil && *event.SubStatus != newSubStatus {
+			_ = s.eventRepo.UpdateSubStatus(event.ID, newSubStatus)
+		}
+	}
+	return nil
 }
