@@ -63,12 +63,16 @@ export default function CreateEvent() {
     if (!formData.maxAge) newErrors.maxAge = "Maximum age is required";
     if (!formData.groupLink) newErrors.groupLink = "Group link is required";
 
+
+
     // ⏰ VALIDASI JAM
     if (formData.startTime && formData.endTime) {
       const start = new Date(`1970-01-01T${formData.startTime}`);
       const end = new Date(`1970-01-01T${formData.endTime}`);
+      const startDay = new Date(`1970-01-01T${formData.startDate}`);
+      const endDay = new Date(`1970-01-01T${formData.endDate}`);
 
-      if (start >= end) {
+      if ((start >= end) && (startDay == endDay)) {
         newErrors.time = "Start time must be earlier than end time";
       }
     }
