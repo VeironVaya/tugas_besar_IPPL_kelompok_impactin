@@ -10,6 +10,7 @@ const YourEventPage = () => {
 
   const [menu, setMenu] = useState("joined"); // joined | created
   const [filter, setFilter] = useState("approved");
+  const [joinedEvents, setJoinedEvents] = useState([]);
 
   const [createdEvents, setCreatedEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,15 +22,63 @@ const YourEventPage = () => {
     });
 
   /* ================= DUMMY JOINED EVENTS ================= */
-  const joinedEvents = [
-    {
-      id: 1,
-      title: "The Legend of Blue Sea",
-      organizer: "Yayasan Laut Hijau",
-      location: "Yogyakarta, Indonesia",
-      date: "April 2025",
-    },
-  ];
+  const fetchJoinedEvents = async (filterValue) => {
+    try {
+      setLoading(true);
+
+      const res = await api.get("/user/events/joined", {
+        params: { status: "all" }, // keyword backend
+      });
+
+      let mapped =
+        res.data?.data?.map((e) => ({
+          id: e.event_id,
+          title: e.title,
+          organizer: e.host_name,
+          location: e.location,
+          date: formatDate(e.start_date),
+
+          startDate: new Date(e.start_date),
+          status: e.status,
+          subStatus: e.sub_status,
+        })) || [];
+
+      const now = new Date();
+
+      // 🔥 FILTER LOGIC JOINED (FRONTEND)
+      if (filterValue === "upcoming") {
+        mapped = mapped.filter((e) => e.startDate > now);
+      }
+
+      if (filterValue === "ongoing") {
+        mapped = mapped.filter(
+          (e) => e.startDate.toDateString() === now.toDateString()
+        );
+      }
+
+      if (filterValue === "completed") {
+        mapped = mapped.filter((e) => e.subStatus === "completed");
+      }
+
+      if (filterValue === "cancelled") {
+        mapped = mapped.filter((e) => e.subStatus === "cancelled");
+      }
+
+      // all → no filter
+      setJoinedEvents(mapped);
+    } catch (err) {
+      console.error("Failed to fetch joined events:", err);
+      setJoinedEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (menu === "joined") {
+      fetchJoinedEvents(filter);
+    }
+  }, [menu, filter]);
 
   /* ================= FETCH CREATED EVENTS ================= */
   const fetchCreatedEvents = async (filterValue) => {
@@ -132,11 +181,16 @@ const YourEventPage = () => {
                 (i) => (
                   <li
                     key={i}
-                    className="cursor-pointer text-gray-600 hover:text-green-600"
                     onClick={() => {
                       setMenu("joined");
-                      setFilter("all");
+                      setFilter(i);
                     }}
+                    className={`cursor-pointer transition
+        ${
+          menu === "joined" && filter === i
+            ? "font-bold text-green-600"
+            : "text-gray-600 hover:text-green-600"
+        }`}
                   >
                     {i.charAt(0).toUpperCase() + i.slice(1)}
                   </li>

@@ -96,6 +96,16 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/profile/:id"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/edit_profile"
         element={
