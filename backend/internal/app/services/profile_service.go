@@ -13,23 +13,33 @@ import (
 
 type ProfileService interface {
 	CreateProfile(userID uint, username string) error
-	GetProfile(userID uint) (response.EditProfileSkillResponseDto, error)
 	EditProfileAndSkills(userID uint, dto request.EditProfileSkillRequestDto) (response.EditProfileSkillResponseDto, error)
 	ChangePassword(userID uint, dto request.ChangePasswordRequestDto) (response.ChangePasswordResponseDto, error)
 	GetByUserID(userID uint) (*models.Profile, error)
+	GetProfileDetail(requestedUserID uint, viewerUserID uint) (response.ProfileDetailResponseDto, error)
 }
 
 type profileService struct {
 	profileRepo repositories.ProfileRepository
 	userRepo    *repositories.UserRepository
 	skillRepo 	repositories.SkillRepository
+	eventRepo   repositories.EventRepository
+	experienceRepo repositories.ExperienceRepository
 }
 
-func NewProfileService(pr repositories.ProfileRepository, ur *repositories.UserRepository, sr repositories.SkillRepository) ProfileService {
+func NewProfileService(
+	pr repositories.ProfileRepository,
+	ur *repositories.UserRepository,
+	sr repositories.SkillRepository,
+	evRepo repositories.EventRepository,
+	exRepo repositories.ExperienceRepository,
+	) ProfileService {
 	return &profileService{
 		profileRepo: pr,
 		userRepo:    ur,
 		skillRepo: sr,
+		eventRepo: evRepo,
+		experienceRepo: exRepo,
 	}
 }
 
@@ -40,43 +50,6 @@ func (s *profileService) CreateProfile(userID uint, username string) error {
 	}
 	return s.profileRepo.Create(&profile)
 }
-
-func (s *profileService) GetProfile(userID uint) (response.EditProfileSkillResponseDto, error) {
-
-	profile, err := s.profileRepo.GetByUserID(userID)
-	if err != nil {
-		return response.EditProfileSkillResponseDto{}, err
-	}
-
-	skills, err := s.skillRepo.GetByUserID(userID)
-	if err != nil {
-		return response.EditProfileSkillResponseDto{}, err
-	}
-
-	var skillDtos []response.SkillResponseDto
-	for _, sk := range skills {
-		skillDtos = append(skillDtos, response.SkillResponseDto{
-			ID:     sk.ID,
-			UserID: sk.UserID,
-			Skills: sk.Skills,
-		})
-	}
-
-	return response.EditProfileSkillResponseDto{
-		ProfileID: profile.ProfileID,
-		UserID:    profile.UserID,
-		Username:  profile.Username,
-		Name:      profile.Name,
-		Status:    profile.Status,
-		Age:       profile.Age,
-		City:      profile.City,
-		Bio:       profile.Bio,
-		ImageURL:  profile.Image,
-		Skills:    skillDtos,
-		Message:   "profile retrieved",
-	}, nil
-}
-
 
 func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfileSkillRequestDto) (response.EditProfileSkillResponseDto, error) {
 
@@ -207,4 +180,55 @@ func (s *profileService) ChangePassword(userID uint, dto request.ChangePasswordR
 
 func (s *profileService) GetByUserID(userID uint) (*models.Profile, error) {
 	return s.profileRepo.GetByUserID(userID)
+}
+
+func (s *profileService) GetProfileDetail(requestedUserID uint, viewerUserID uint) (response.ProfileDetailResponseDto, error) {
+
+	profile, err := s.profileRepo.GetByUserID(requestedUserID)
+	if err != nil {
+		return response.ProfileDetailResponseDto{}, err
+	}
+
+	skills, _ := s.skillRepo.GetByUserID(requestedUserID)
+	experiences, _ := s.experienceRepo.GetByUserID(requestedUserID)
+	events, _ := s.eventRepo.GetCompletedEventsByParticipant(requestedUserID)
+
+	// map skills
+	var skillDtos []response.SkillResponseDto
+	for _, sk := range skills {
+		skillDtos = append(skillDtos, response.SkillResponseDto{
+			ID:     sk.ID,
+			UserID: sk.UserID,
+			Skills: sk.Skills,
+		})
+	}
+
+	// map experiences
+	var expDtos []response.ProfileExperienceDto
+	for _, ex := range experiences {
+		expDtos = append(expDtos, response.ProfileExperienceDto{
+			ExperienceID: ex.ID,
+			Title:        ex.Title,
+			Creator:      ex.HostName,
+			Date:         ex.Date,
+			Description:  ex.Description,
+			CoverImage:   ex.CoverImage,
+		})
+	}
+
+	return response.ProfileDetailResponseDto{
+		ProfileID:  profile.ProfileID,
+		Username:   profile.Username,
+		Name:       profile.Name,
+		Status:     profile.Status,
+		Age:        profile.Age,
+		City:       profile.City,
+		Bio:        profile.Bio,
+		ImageURL:   profile.Image,
+		Skills:     skillDtos,
+		Experiences: expDtos,
+		Events:     events,
+		IsYou:      requestedUserID == viewerUserID,
+		Message:    "profile retrieved",
+	}, nil
 }
