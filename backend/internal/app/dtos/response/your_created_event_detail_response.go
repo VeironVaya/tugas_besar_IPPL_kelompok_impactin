@@ -8,6 +8,7 @@ type YourCreatedEventDetailResponseDto struct {
 	Location           string         `json:"location"`
 	StartDate          time.Time      `json:"start_date"`
 	CurrentParticipant int            `json:"current_participant"`
+	MaxParticipant	   int			  `json:"max_participant"`
 	Status             string         `json:"status"`
 	SubStatus          string         `json:"sub_status"`
 	Applicants         []EventUserDto `json:"applicants"`

@@ -251,6 +251,7 @@ func (s *eventService) GetYourCreatedEventDetail(userID, eventID uint) (*respons
 		Location:           event.Location,
 		StartDate:          event.StartDate,
 		CurrentParticipant: event.CurrentParticipant,
+		MaxParticipant: 	event.MaxParticipant,	
 		Status:             event.Status,
 		SubStatus:          *event.SubStatus,
 		Applicants:         applicants,
