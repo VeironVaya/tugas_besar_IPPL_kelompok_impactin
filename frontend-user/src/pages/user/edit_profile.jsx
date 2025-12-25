@@ -3,11 +3,42 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../components/navbar";
 import avatarImg from "../../assets/photo avatar of user profile.png";
 import { getProfileAPI, updateProfileAPI } from "../../api/profile";
+import { uploadImageToCloudinary } from "../../api/cloudinary";
 
 /* ================= CLOUDINARY CONFIG ================= */
-// nanti ganti sesuai akunmu
 const CLOUD_NAME = "YOUR_CLOUD_NAME";
 const UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
+
+/* ================= SKILLS NORMALIZER ================= */
+/**
+ * Menjamin output: array of STRING
+ * Aman untuk semua bentuk response BE:
+ * - null
+ * - { id, user_id, skills: [...] }
+ * - [{ id, user_id, skills: "React" }]
+ * - ["React", "UI"]
+ */
+const normalizeSkills = (rawSkills) => {
+  if (!rawSkills) return [];
+
+  // case: { skills: [...] }
+  if (!Array.isArray(rawSkills) && Array.isArray(rawSkills.skills)) {
+    return rawSkills.skills.filter(Boolean);
+  }
+
+  // case: array (string / object)
+  if (Array.isArray(rawSkills)) {
+    return rawSkills
+      .map((s) => {
+        if (typeof s === "string") return s;
+        if (typeof s === "object" && s.skills) return s.skills;
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  return [];
+};
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -36,15 +67,15 @@ const EditProfile = () => {
         setFormData({
           username: res.username || "",
           name: res.name || "",
-          age: res.age || "",
+          age: res.age ?? "",
           location: res.city || "",
           status: res.status || "",
           bio: res.bio || "",
-          skills: res.skills || [],
+          skills: normalizeSkills(res.skills), // ⬅️ KUNCI UTAMA
           avatar: res.image_url || avatarImg,
         });
       } catch (err) {
-        console.error(err);
+        console.error("Fetch profile failed:", err);
       } finally {
         setLoading(false);
       }
@@ -58,24 +89,21 @@ const EditProfile = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", UPLOAD_PRESET);
+    // 1️⃣ preview langsung (local)
+    const localPreview = URL.createObjectURL(file);
+    setFormData((prev) => ({
+      ...prev,
+      avatar: localPreview,
+    }));
 
     try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: data,
-        }
-      );
+      // 2️⃣ upload ke Cloudinary
+      const imageUrl = await uploadImageToCloudinary(file);
 
-      const result = await res.json();
-
+      // 3️⃣ ganti avatar ke URL cloudinary
       setFormData((prev) => ({
         ...prev,
-        avatar: result.secure_url,
+        avatar: imageUrl,
       }));
     } catch (err) {
       console.error(err);
@@ -93,7 +121,7 @@ const EditProfile = () => {
         age: formData.age ? Number(formData.age) : null,
         city: formData.location,
         bio: formData.bio,
-        skills: formData.skills,
+        skills: formData.skills, // ⬅️ PASTI array string
         image_url: formData.avatar,
       };
 
@@ -107,6 +135,7 @@ const EditProfile = () => {
     }
   };
 
+  /* ================= LOADING ================= */
   if (loading) {
     return (
       <>
@@ -199,29 +228,33 @@ const EditProfile = () => {
               <label className="font-semibold">Skills</label>
 
               <div className="flex flex-wrap gap-2 mt-2">
-                {formData.skills.map((skill, i) => (
-                  <span
-                    key={i}
-                    className="bg-green-100 text-green-700
-                               px-3 py-1 rounded-full
-                               flex items-center gap-2"
-                  >
-                    {skill}
-                    <button
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          skills: formData.skills.filter(
-                            (_, idx) => idx !== i
-                          ),
-                        })
-                      }
-                      className="text-red-500 text-xs"
+                {formData.skills.length > 0 ? (
+                  formData.skills.map((skill, i) => (
+                    <span
+                      key={`${skill}-${i}`}
+                      className="bg-green-100 text-green-700
+                                 px-3 py-1 rounded-full
+                                 flex items-center gap-2"
                     >
-                      ✕
-                    </button>
-                  </span>
-                ))}
+                      {skill}
+                      <button
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            skills: formData.skills.filter(
+                              (_, idx) => idx !== i
+                            ),
+                          })
+                        }
+                        className="text-red-500 text-xs"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-400">No skills added</p>
+                )}
               </div>
 
               <div className="flex gap-2 mt-3">
@@ -237,7 +270,7 @@ const EditProfile = () => {
                     if (newSkill.trim()) {
                       setFormData({
                         ...formData,
-                        skills: [...formData.skills, newSkill],
+                        skills: [...formData.skills, newSkill.trim()],
                       });
                       setNewSkill("");
                     }

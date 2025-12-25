@@ -28,6 +28,9 @@ type EventService interface {
 	HostApplicantApproval(hostID uint, eventID uint, dto request.HostApplicantApprovalRequestDto) (response.HostApplicantApprovalResponseDto, error)
 	HostRemoveParticipant(hostID uint, eventID uint, dto request.HostRemoveParticipantRequestDto) (response.HostRemoveParticipantResponseDto, error)
 	CancelEvent(eventID uint, userID *uint, adminID *uint) (response.CancelEventResponseDto, error)
+	CloseEvent(userID, eventID uint) (response.EventSubStatusUpdateResponseDto, error)
+	OpenEvent(userID, eventID uint) (response.EventSubStatusUpdateResponseDto, error)
+	GetYourJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
 }
 
 type eventService struct {
@@ -218,7 +221,6 @@ func (s *eventService) GetYourCreatedEvents(userID uint, status string) ([]respo
 }
 
 func (s *eventService) GetYourCreatedEventDetail(userID, eventID uint) (*response.YourCreatedEventDetailResponseDto, error) {
-
 	// 1. Ambil event (sekalian validasi ini milik host)
 	event, err := s.eventRepo.GetEventByIDAndHost(eventID, userID)
 	if err != nil {
@@ -245,6 +247,32 @@ func (s *eventService) GetYourCreatedEventDetail(userID, eventID uint) (*respons
 		return nil, err
 	}
 
+	startT, _ := time.Parse("15:04", event.StartTime)
+	startDateTime := time.Date(
+		event.StartDate.Year(),
+		event.StartDate.Month(),
+		event.StartDate.Day(),
+		startT.Hour(),
+		startT.Minute(),
+		0, 0, time.Local,
+	)
+
+	now := time.Now()
+
+	canOpen := false
+	if event.Status == "approved" &&
+		event.SubStatus != nil &&
+		*event.SubStatus == "closed" &&
+		now.Before(startDateTime) &&
+		event.CurrentParticipant < event.MaxParticipant {
+			canOpen = true
+	}
+	
+	canClose := false
+	if event.Status == "approved" && event.SubStatus != nil && *event.SubStatus == "opened" {
+		canClose = true
+	}
+
 	return &response.YourCreatedEventDetailResponseDto{
 		EventID:            event.ID,
 		Title:              event.Title,
@@ -254,6 +282,8 @@ func (s *eventService) GetYourCreatedEventDetail(userID, eventID uint) (*respons
 		MaxParticipant: 	event.MaxParticipant,	
 		Status:             event.Status,
 		SubStatus:          *event.SubStatus,
+		CanOpen: 			canOpen,
+		CanClose: 			canClose,		
 		Applicants:         applicants,
 		Participants:       participants,
 	}, nil
@@ -661,4 +691,101 @@ func (s *eventService) CancelEvent(eventID uint, userID *uint, adminID *uint) (r
 		Status:    event.Status,
 		SubStatus: event.SubStatus,
 	}, nil
+}
+
+func (s *eventService) CloseEvent(userID, eventID uint) (response.EventSubStatusUpdateResponseDto, error) {
+	event, err := s.eventRepo.GetEventByID(eventID)
+	if err != nil {
+		return response.EventSubStatusUpdateResponseDto{}, errors.New("event not found")
+	}
+
+	// host only
+	if event.UserID != userID {
+		return response.EventSubStatusUpdateResponseDto{}, errors.New("only host can close this event")
+	}
+
+	if event.Status != "approved" || (event.SubStatus != nil && *event.SubStatus != "opened") {
+		return response.EventSubStatusUpdateResponseDto{}, errors.New("event cannot be closed")
+	}
+
+	subStatus := "closed"
+
+	if err := s.eventRepo.UpdateSubStatus(event.ID, subStatus); err != nil {
+		return response.EventSubStatusUpdateResponseDto{}, err
+	}
+
+	return response.EventSubStatusUpdateResponseDto{
+		EventID:   event.ID,
+		Title:     event.Title,
+		Status:    event.Status,
+		SubStatus: subStatus,
+		Message:   "event successfully closed",
+	}, nil
+}
+
+func (s *eventService) OpenEvent(userID, eventID uint) (response.EventSubStatusUpdateResponseDto, error) {
+	event, err := s.eventRepo.GetEventByID(eventID)
+	if err != nil {
+		return response.EventSubStatusUpdateResponseDto{}, errors.New("event not found")
+	}
+
+	// host only
+	if event.UserID != userID {
+		return response.EventSubStatusUpdateResponseDto{}, errors.New("only host can open this event")
+	}
+
+	if event.Status != "approved" || (event.SubStatus != nil && *event.SubStatus != "closed") {
+		return response.EventSubStatusUpdateResponseDto{}, errors.New("event cannot be opened")
+	}
+
+	if event.CurrentParticipant >= event.MaxParticipant {
+		return response.EventSubStatusUpdateResponseDto{}, errors.New("event cannot be opened because is already full")
+	}
+
+	subStatus, err := utils.DetermineSubStatus(
+		event.StartDate,
+		event.StartTime,
+		event.EndDate,
+		event.EndTime,
+	)
+	if err != nil {
+		return response.EventSubStatusUpdateResponseDto{}, err
+	}
+
+	if subStatus != "opened" {
+		return response.EventSubStatusUpdateResponseDto{}, errors.New("event cannot be opened at this time")
+	}
+
+	if err := s.eventRepo.UpdateSubStatus(event.ID, "opened"); err != nil {
+		return response.EventSubStatusUpdateResponseDto{}, err
+	}
+
+	return response.EventSubStatusUpdateResponseDto{
+		EventID:   event.ID,
+		Title:     event.Title,
+		Status:    event.Status,
+		SubStatus: "opened",
+		Message:   "event successfully opened",
+	}, nil
+}
+
+func (s *eventService) GetYourJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error) {
+	validStatus := map[string]bool{
+		"all":   true,
+		"ongoing":  true,
+		"upcoming":  true,
+		"completed": true,
+		"cancelled": true,
+	}
+
+	if !validStatus[status] {
+		return nil, errors.New("invalid status filter")
+	}
+
+	events, err := s.eventRepo.GetJoinedEvents(userID, status)
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
 }

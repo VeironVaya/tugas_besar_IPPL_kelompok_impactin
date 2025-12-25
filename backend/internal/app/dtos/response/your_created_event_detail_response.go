@@ -11,6 +11,8 @@ type YourCreatedEventDetailResponseDto struct {
 	MaxParticipant	   int			  `json:"max_participant"`
 	Status             string         `json:"status"`
 	SubStatus          string         `json:"sub_status"`
+	CanOpen			   bool			  `json:"can_open"`
+	CanClose		   bool			  `json:"can_close"`
 	Applicants         []EventUserDto `json:"applicants"`
 	Participants       []EventUserDto `json:"participants"`
 }

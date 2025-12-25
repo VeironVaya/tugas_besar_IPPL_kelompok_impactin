@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -28,6 +29,8 @@ type EventRepository interface {
    GetEventByIDAndHost(eventID, userID uint) (*models.Event, error)
    GetApplicantsByEventID(eventID uint) ([]response.EventUserDto, error)
    GetParticipantsByEventID(eventID uint) ([]response.EventUserDto, error)
+   GetJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
+   GetCompletedEventsByParticipant(userID uint) ([]response.ProfileCompletedEventDto, error)
 }
 
 type eventRepository struct {
@@ -420,4 +423,78 @@ func (r *eventRepository) GetParticipantsByEventID(eventID uint) ([]response.Eve
 		Scan(&participants).Error
 
 	return participants, err
+}
+
+func (r *eventRepository) GetJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error) {
+	var events []response.YourEventResponseDto
+
+	now := time.Now()
+
+	query := r.db.Table("participants").
+		Joins("JOIN events ON events.id = participants.event_id").
+		Joins("JOIN profiles ON profiles.user_id = events.user_id").
+		Where("participants.user_id = ?", userID)
+
+	// 🔹 Filter logic
+	switch strings.ToLower(status) {
+	case "ongoing":
+		query = query.Where(`
+			? >= TIMESTAMP(DATE(events.start_date), events.start_time)
+			AND ? < TIMESTAMP(DATE(events.end_date), events.end_time)
+			AND events.sub_status != ?
+			AND events.sub_status != ?
+		`, now, now, "completed", "cancelled")
+
+	case "upcoming":
+		query = query.Where(`
+			? < TIMESTAMP(DATE(events.start_date), events.start_time)
+			AND events.sub_status != ?
+			AND events.sub_status != ?
+		`, now, "completed", "cancelled")	
+
+	case "completed":
+		query = query.Where(`events.sub_status = ?`, "completed")
+
+	case "cancelled":
+		query = query.Where("events.sub_status = ?", "cancelled")
+
+	// case "all" → tidak perlu tambahan status
+	}
+
+	err := query.
+		Select(`
+			events.id AS event_id,
+			events.title,
+			events.start_date,
+			events.location,
+			events.status,
+			events.sub_status,
+			profiles.name AS host_name
+		`).
+		Order("events.start_date DESC").
+		Scan(&events).Error
+
+	return events, err
+}
+
+func (r *eventRepository) GetCompletedEventsByParticipant(userID uint) ([]response.ProfileCompletedEventDto, error) {
+	var events []response.ProfileCompletedEventDto
+
+	err := r.db.Table("participants").
+		Joins("JOIN events ON events.id = participants.event_id").
+		Joins("JOIN profiles ON profiles.user_id = events.user_id").
+		Where("participants.user_id = ?", userID).
+		Where("events.sub_status = ?", "completed").
+		Select(`
+			events.id AS event_id,
+			events.title,
+			profiles.name AS creator,
+			events.start_date,
+			events.description,
+			events.cover_image
+		`).
+		Order("events.start_date DESC").
+		Scan(&events).Error
+
+	return events, err
 }

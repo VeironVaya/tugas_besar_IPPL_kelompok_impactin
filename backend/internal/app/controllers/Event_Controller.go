@@ -369,3 +369,50 @@ func (c *EventController) CancelEvent(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, resp)
 }
+
+func (c *EventController) CloseEvent(ctx *gin.Context) {
+	uid, _ := ctx.Get("user_id")
+	eventID, _ := strconv.Atoi(ctx.Param("event_id"))
+
+	resp, err := c.eventService.CloseEvent(uid.(uint), uint(eventID))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+func (c *EventController) OpenEvent(ctx *gin.Context) {
+	uid, _ := ctx.Get("user_id")
+	eventID, _ := strconv.Atoi(ctx.Param("event_id"))
+
+	resp, err := c.eventService.OpenEvent(uid.(uint), uint(eventID))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+func (c *EventController) GetYourJoinedEvents(ctx *gin.Context) {
+	uid, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+
+	userID := uid.(uint)
+	status := ctx.DefaultQuery("status", "all")
+
+	events, err := c.eventService.GetYourJoinedEvents(userID, status)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": events,
+	})
+}

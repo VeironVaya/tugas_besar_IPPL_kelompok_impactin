@@ -12,8 +12,3 @@ export const loginAPI = async (payload) => {
   return res.data; // pastikan BE kirim token
 };
 
-// GET PROFILE (CEK DULU ADA ATAU TIDAK)
-export const getProfileAPI = async () => {
-  const res = await api.get("/user/profile");
-  return res.data;
-};

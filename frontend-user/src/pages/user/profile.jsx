@@ -4,7 +4,7 @@ import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
 import avatarImg from "../../assets/photo avatar of user profile.png";
-import { getProfileAPI } from "../../api/profile";
+import { getProfileAPI, changePasswordAPI } from "../../api/profile";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -25,7 +25,10 @@ const ProfilePage = () => {
           age: res.age ? `${res.age} Tahun` : "-",
           location: res.city || "-",
           bio: res.bio || "Belum ada bio.",
-          skills: res.skills || [],
+          skills: Array.isArray(res.skills)
+            ? res.skills.map((s) => (typeof s === "string" ? s : s.skills))
+            : res.skills?.skills || [],
+
           image: res.image_url || avatarImg,
         });
       } catch (err) {
@@ -157,12 +160,8 @@ const ProfilePage = () => {
     confirm: "",
   });
 
-  const handleChangePassword = () => {
-    if (
-      !passwordForm.current ||
-      !passwordForm.newPw ||
-      !passwordForm.confirm
-    ) {
+  const handleChangePassword = async () => {
+    if (!passwordForm.current || !passwordForm.newPw || !passwordForm.confirm) {
       alert("Semua field wajib diisi!");
       return;
     }
@@ -172,9 +171,23 @@ const ProfilePage = () => {
       return;
     }
 
-    alert("Password berhasil diubah (dummy)");
-    setShowChangePwModal(false);
-    setPasswordForm({ current: "", newPw: "", confirm: "" });
+    try {
+      await changePasswordAPI({
+        old_password: passwordForm.current,
+        new_password: passwordForm.newPw,
+      });
+
+      alert("Password berhasil diubah ✅");
+
+      setShowChangePwModal(false);
+      setPasswordForm({ current: "", newPw: "", confirm: "" });
+    } catch (err) {
+      console.error(err);
+
+      const msg = err.response?.data?.message || "Input minimal 6 characters ";
+
+      alert(msg);
+    }
   };
 
   /* ================= LOADING ================= */
@@ -193,7 +206,6 @@ const ProfilePage = () => {
   return (
     <>
       <Header />
-
       <div className="min-h-screen bg-green-50 px-6 py-10">
         <div className="max-w-6xl mx-auto">
           {/* ================= PROFILE HEADER ================= */}
@@ -327,12 +339,8 @@ const ProfilePage = () => {
                           <h3 className="font-semibold text-green-800 text-lg">
                             {e.title}
                           </h3>
-                          <p className="text-sm text-gray-600">
-                            {e.organizer}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {e.date}
-                          </p>
+                          <p className="text-sm text-gray-600">{e.organizer}</p>
+                          <p className="text-xs text-gray-500 mt-1">{e.date}</p>
                         </div>
 
                         <div className="flex gap-2">
@@ -357,15 +365,92 @@ const ProfilePage = () => {
 
               {tab === "impact" && (
                 <p className="italic text-gray-500">
-                  Experience dari Impactin akan ditampilkan di sini
-                  (read-only).
+                  Experience dari Impactin akan ditampilkan di sini (read-only).
                 </p>
               )}
             </div>
           </div>
         </div>
       </div>
+      {showChangePwModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Change Password</h2>
 
+            <input
+              type="password"
+              placeholder="Current password"
+              value={passwordForm.current}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, current: e.target.value })
+              }
+              className="w-full border p-2 rounded mb-3"
+            />
+
+            <input
+              type="password"
+              placeholder="New password"
+              value={passwordForm.newPw}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, newPw: e.target.value })
+              }
+              className="w-full border p-2 rounded mb-3"
+            />
+
+            <input
+              type="password"
+              placeholder="Confirm new password"
+              value={passwordForm.confirm}
+              onChange={(e) =>
+                setPasswordForm({ ...passwordForm, confirm: e.target.value })
+              }
+              className="w-full border p-2 rounded mb-4"
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowChangePwModal(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangePassword}
+                className="px-4 py-2 bg-green-700 text-white rounded"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-4">Confirm Logout</h2>
+
+            <p className="mb-6 text-gray-600">
+              Are you sure you want to log out?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-600 text-white rounded"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      console.log("IMAGE FROM API:", res.image_url);
       <Footer />
     </>
   );

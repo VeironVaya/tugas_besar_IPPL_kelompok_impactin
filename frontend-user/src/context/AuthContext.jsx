@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { loginAPI, registerAPI } from "../api/auth";
+import { getProfileAPI } from "../api/profile";
 
 const AuthContext = createContext();
 
@@ -11,9 +12,8 @@ export const AuthProvider = ({ children }) => {
     const data = await loginAPI(payload);
     localStorage.setItem("token", data.token);
 
-    setUser({
-      username: payload.username,
-    });
+    const profile = await getProfileAPI();
+    setUser(profile);
 
     setLoading(false);
   };
@@ -28,7 +28,26 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    setLoading(false);
+    const initAuth = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const profile = await getProfileAPI();
+        setUser(profile);
+      } catch (err) {
+        localStorage.removeItem("token");
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
   }, []);
 
   return (

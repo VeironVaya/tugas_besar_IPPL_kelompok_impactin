@@ -20,11 +20,14 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 		auth.POST("/", eventController.CreateEvent)
 		auth.GET("/your", eventController.GetYourCreatedEvents)
 		auth.GET("/your/:event_id", eventController.GetYourCreatedEventDetail)
+		auth.GET("joined", eventController.GetYourJoinedEvents)
 		auth.GET("/:event_id", eventController.GetEventDetail)
 		auth.POST("/join/:event_id", eventController.JoinEvent)
 		auth.PATCH("/applicants/:event_id", eventController.HostApplicantApproval)
 		auth.DELETE("/participants/:event_id", eventController.HostRemoveParticipant)
 		auth.PATCH("/cancel/:event_id", eventController.CancelEvent)
+		auth.PATCH("/close/:event_id", eventController.CloseEvent)
+		auth.PATCH("/open/:event_id", eventController.OpenEvent)
 	}
 
 	authAdmin := router.Group("api/admin/events")
@@ -72,9 +75,19 @@ func ProfileRoutes(router *gin.Engine, profileController *controllers.ProfileCon
 	r := router.Group("/api/user/profile")
 	r.Use(utils.Auth()) // JWT middleware
 	{
-		r.GET("/", profileController.GetProfile)
+		r.GET("/:user_id", profileController.GetProfile)
 		r.PATCH("/", profileController.EditProfileAndSkills)
 		r.PATCH("/password", profileController.ChangePassword)
+	}
+}
+
+func ExperienceRoutes(router *gin.Engine, experienceController *controllers.ExperienceController) {
+	r := router.Group("/api/user/profile/experience")
+	r.Use(utils.Auth())
+	{
+		r.POST("/", experienceController.Create)
+		r.PATCH("/:experience_id", experienceController.Update)
+		r.DELETE("/:experience_id", experienceController.Delete)
 	}
 }
 
@@ -84,10 +97,12 @@ func SetupAllRoutes(router *gin.Engine,
 	profileController *controllers.ProfileController,
 	adminController *controllers.AdminController,
 	reportController *controllers.ReportController,
+	experienceController *controllers.ExperienceController,
 ) {
 	EventRoutes(router, eventController)
 	UserRoutes(router, userController)
 	ProfileRoutes(router, profileController)
 	AdminRoutes(router, adminController)
 	ReportRoutes(router, reportController)
+	ExperienceRoutes(router, experienceController)
 }
