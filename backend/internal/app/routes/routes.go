@@ -25,6 +25,8 @@ func EventRoutes(router *gin.Engine, eventController *controllers.EventControlle
 		auth.PATCH("/applicants/:event_id", eventController.HostApplicantApproval)
 		auth.DELETE("/participants/:event_id", eventController.HostRemoveParticipant)
 		auth.PATCH("/cancel/:event_id", eventController.CancelEvent)
+		auth.PATCH("/close/:event_id", eventController.CloseEvent)
+		auth.PATCH("/open/:event_id", eventController.OpenEvent)
 	}
 
 	authAdmin := router.Group("api/admin/events")
