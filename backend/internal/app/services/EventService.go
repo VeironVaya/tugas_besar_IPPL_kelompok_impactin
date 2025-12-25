@@ -218,7 +218,6 @@ func (s *eventService) GetYourCreatedEvents(userID uint, status string) ([]respo
 }
 
 func (s *eventService) GetYourCreatedEventDetail(userID, eventID uint) (*response.YourCreatedEventDetailResponseDto, error) {
-
 	// 1. Ambil event (sekalian validasi ini milik host)
 	event, err := s.eventRepo.GetEventByIDAndHost(eventID, userID)
 	if err != nil {
@@ -245,6 +244,32 @@ func (s *eventService) GetYourCreatedEventDetail(userID, eventID uint) (*respons
 		return nil, err
 	}
 
+	startT, _ := time.Parse("15:04", event.StartTime)
+	startDateTime := time.Date(
+		event.StartDate.Year(),
+		event.StartDate.Month(),
+		event.StartDate.Day(),
+		startT.Hour(),
+		startT.Minute(),
+		0, 0, time.Local,
+	)
+
+	now := time.Now()
+
+	canOpen := false
+	if event.Status == "approved" &&
+		event.SubStatus != nil &&
+		*event.SubStatus == "closed" &&
+		now.Before(startDateTime) &&
+		event.CurrentParticipant < event.MaxParticipant {
+			canOpen = true
+	}
+	
+	canClose := false
+	if event.Status == "approved" && event.SubStatus != nil && *event.SubStatus == "opened" {
+		canClose = true
+	}
+
 	return &response.YourCreatedEventDetailResponseDto{
 		EventID:            event.ID,
 		Title:              event.Title,
@@ -254,6 +279,8 @@ func (s *eventService) GetYourCreatedEventDetail(userID, eventID uint) (*respons
 		MaxParticipant: 	event.MaxParticipant,	
 		Status:             event.Status,
 		SubStatus:          *event.SubStatus,
+		CanOpen: 			canOpen,
+		CanClose: 			canClose,		
 		Applicants:         applicants,
 		Participants:       participants,
 	}, nil
