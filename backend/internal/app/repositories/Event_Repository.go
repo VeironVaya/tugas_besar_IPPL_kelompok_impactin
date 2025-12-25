@@ -125,7 +125,7 @@ func (r *eventRepository) GetYourCreatedEvents(userID uint, status string) ([]re
 	case "approved":
 		query = query.
 			Where("events.status = ?", "approved").
-			Where("events.sub_status IS NULL OR events.sub_status != ?", "cancelled")
+			Where("events.sub_status IS NULL OR events.sub_status != ? AND events.sub_status != ?", "cancelled", "completed")
 
 	case "declined":
 		query = query.Where("events.status = ?", "declined")
@@ -134,6 +134,11 @@ func (r *eventRepository) GetYourCreatedEvents(userID uint, status string) ([]re
 		query = query.
 			Where("events.status = ?", "approved").
 			Where("events.sub_status = ?", "cancelled")
+
+	case "completed":
+		query = query.
+			Where("events.status = ?", "approved").
+			Where("events.sub_status = ?", "completed")
 	}
 
 	err := query.

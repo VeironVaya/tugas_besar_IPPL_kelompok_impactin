@@ -10,10 +10,12 @@ type AdminReportedEventDetailResponseDto struct {
 	EventID         uint      `json:"event_id"`
 	EventTitle      string    `json:"event_title"`
 	HostName        string    `json:"host_name"`
+	EventStatus		string	  `json:"event_status"`
+	EventSubStatus	string	  `json:"event_sub_status"`
 
 	Description     string    `json:"description"`
-	Status          string    `json:"status"`
+	ReportStatus	string    `json:"report_status"`
 
 	AdminResponse   *string   `json:"admin_response,omitempty"`
-	RespondedDate     *time.Time `json:"responded_date,omitempty"`
+	RespondedDate   *time.Time `json:"responded_date,omitempty"`
 }
