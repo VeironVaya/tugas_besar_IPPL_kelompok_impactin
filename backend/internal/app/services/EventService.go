@@ -791,7 +791,6 @@ func (s *eventService) GetYourJoinedEvents(userID uint, status string) ([]respon
 	return events, nil
 }
 
-// event_service.go
 func (s *eventService) AutoUpdateEventSubStatus() error {
 	events, err := s.eventRepo.GetApprovedEvents()
 	if err != nil {
@@ -809,7 +808,7 @@ func (s *eventService) AutoUpdateEventSubStatus() error {
 			continue
 		}
 
-		if event.SubStatus != nil && *event.SubStatus != newSubStatus {
+		if event.SubStatus != nil && *event.SubStatus != "cancelled" && *event.SubStatus != newSubStatus {
 			_ = s.eventRepo.UpdateSubStatus(event.ID, newSubStatus)
 		}
 	}
