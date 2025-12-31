@@ -166,6 +166,8 @@ func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetai
 			events.id AS event_id,
 			events.title,
 			events.location,
+			events.specific_address,
+			events.address_link,
 			events.start_date,
 			events.end_date,
 			events.start_time,
