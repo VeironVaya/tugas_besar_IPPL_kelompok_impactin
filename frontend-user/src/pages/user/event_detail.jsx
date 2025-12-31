@@ -305,6 +305,27 @@ const EventDetailPage = () => {
             </div>
           </div>
         )}
+        {/* TERMS & CONDITIONS MODAL */}
+        {showTerms && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+              <h2 className="text-xl font-bold mb-4">Terms & Conditions</h2>
+
+              <p className="text-sm text-gray-700 whitespace-pre-line">
+                {event.termsAndConditions || "No terms provided."}
+              </p>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowTerms(false)}
+                  className="px-4 py-2 border rounded-lg"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />
