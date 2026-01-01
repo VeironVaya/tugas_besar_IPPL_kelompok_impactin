@@ -33,7 +33,7 @@ services:
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_NAME=impactin_db
-      - RESET_DB=false
+      - RESET_DB=true
     ports:
       - "8080:8080"
     depends_on:
