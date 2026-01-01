@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "/api", // relative path for Vite proxy
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 /* ===== REQUEST INTERCEPTOR ===== */
