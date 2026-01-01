@@ -100,8 +100,6 @@ func SeedAdmin(db *gorm.DB) {
 
 	log.Println("✅ Admin seeded successfully")
 }
-<<<<<<< HEAD
-=======
 
 func StartEventSubStatusScheduler(updater services.EventService, interval time.Duration) {
 	ticker := time.NewTicker(interval) // interval aman
@@ -113,4 +111,3 @@ func StartEventSubStatusScheduler(updater services.EventService, interval time.D
 		}
 	}()
 }
->>>>>>> 6779cff8306fdd1adda9ac1469731b840cc9e86f
