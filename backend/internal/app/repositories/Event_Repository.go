@@ -31,6 +31,7 @@ type EventRepository interface {
    GetParticipantsByEventID(eventID uint) ([]response.EventUserDto, error)
    GetJoinedEvents(userID uint, status string) ([]response.YourEventResponseDto, error)
    GetCompletedEventsByParticipant(userID uint) ([]response.ProfileCompletedEventDto, error)
+   GetApprovedEvents() ([]models.Event, error)
 }
 
 type eventRepository struct {
@@ -165,6 +166,8 @@ func (r *eventRepository) GetEventDetailByID(eventID uint) (*response.EventDetai
 			events.id AS event_id,
 			events.title,
 			events.location,
+			events.specific_address,
+			events.address_link,
 			events.start_date,
 			events.end_date,
 			events.start_time,
@@ -496,5 +499,13 @@ func (r *eventRepository) GetCompletedEventsByParticipant(userID uint) ([]respon
 		Order("events.start_date DESC").
 		Scan(&events).Error
 
+	return events, err
+}
+
+func (r *eventRepository) GetApprovedEvents() ([]models.Event, error) {
+	var events []models.Event
+	err := r.db.
+		Where("status = ?", "approved").
+		Find(&events).Error
 	return events, err
 }
