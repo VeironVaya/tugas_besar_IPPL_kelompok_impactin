@@ -619,27 +619,28 @@ func (s *eventService) HostRemoveParticipant(hostID uint, eventID uint, dto requ
 		event.CurrentParticipant--
 	}
 
-	if event.Status == "approved" && event.SubStatus != nil {
-		if *event.SubStatus == "closed" && event.CurrentParticipant < event.MaxParticipant {
+	// KOMEN DINYALAIN KALAU MAU OTOMATIS OPEN EVENT SAAT MAX PARTICIPANT TIDAK PENUH
+	// if event.Status == "approved" && event.SubStatus != nil {
+	// 	if *event.SubStatus == "closed" && event.CurrentParticipant < event.MaxParticipant {
 
-			subStatus, err := utils.DetermineSubStatus(
-				event.StartDate,
-				event.StartTime,
-				event.EndDate,
-				event.EndTime,
-			)
-			if err != nil {
-				return response.HostRemoveParticipantResponseDto{}, err
-			}
+	// 		subStatus, err := utils.DetermineSubStatus(
+	// 			event.StartDate,
+	// 			event.StartTime,
+	// 			event.EndDate,
+	// 			event.EndTime,
+	// 		)
+	// 		if err != nil {
+	// 			return response.HostRemoveParticipantResponseDto{}, err
+	// 		}
 
-			// hanya update kalau opened
-			if subStatus == "opened" {
-				if err := s.eventRepo.UpdateSubStatus(eventID, subStatus); err != nil {
-					return response.HostRemoveParticipantResponseDto{}, err
-				}
-			}
-		}
-	}
+	// 		// hanya update kalau opened
+	// 		if subStatus == "opened" {
+	// 			if err := s.eventRepo.UpdateSubStatus(eventID, subStatus); err != nil {
+	// 				return response.HostRemoveParticipantResponseDto{}, err
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	return response.HostRemoveParticipantResponseDto{
 		EventID: eventID,
@@ -808,7 +809,15 @@ func (s *eventService) AutoUpdateEventSubStatus() error {
 			continue
 		}
 
-		if event.SubStatus != nil && *event.SubStatus != "cancelled" && *event.SubStatus != newSubStatus {
+		if event.SubStatus == nil || *event.SubStatus == "cancelled" {
+			continue
+		}
+		
+		if *event.SubStatus == "closed" && newSubStatus == "opened" {
+			continue
+		}
+		
+		if *event.SubStatus != newSubStatus {
 			_ = s.eventRepo.UpdateSubStatus(event.ID, newSubStatus)
 		}
 	}
