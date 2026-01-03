@@ -44,4 +44,3 @@ func (r *applicantRepository) DeleteTx(tx *gorm.DB, userID, eventID uint) error 
 		Where("user_id = ? AND event_id = ?", userID, eventID).
 		Delete(&models.Applicant{}).Error
 }
-

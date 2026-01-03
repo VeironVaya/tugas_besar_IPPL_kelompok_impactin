@@ -70,7 +70,7 @@ services:
       - "5173:5173"
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - DOCKER=false      
+      - DOCKER=true      
     depends_on:
       - backend
     networks:
@@ -88,7 +88,7 @@ services:
       - "5174:5174"
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - DOCKER=false
+      - DOCKER=true
     depends_on:
       - backend
     networks:
