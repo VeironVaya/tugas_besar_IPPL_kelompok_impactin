@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import api from "../../api/api";
 
 import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 
 const YourEventPage = () => {
+  const location = useLocation();
+
   const navigate = useNavigate();
 
   const [menu, setMenu] = useState("joined"); // joined | created
@@ -104,7 +107,9 @@ const YourEventPage = () => {
 
       // ✅ FRONTEND FILTER MINIMAL (ANTI ERROR DATA)
       if (filterValue === "approved") {
-        mapped = mapped.filter((e) => e.subStatus === "opened");
+        mapped = mapped.filter(
+          (e) => e.subStatus === "opened" || e.subStatus === "closed"
+        );
       }
 
       if (filterValue === "pending") {
@@ -133,7 +138,7 @@ const YourEventPage = () => {
     if (menu === "created") {
       fetchCreatedEvents(filter);
     }
-  }, [menu, filter]);
+  }, [menu, filter, location.pathname]);
 
   /* ================= DISPLAYED EVENTS ================= */
   const displayedEvents = menu === "joined" ? joinedEvents : createdEvents;
@@ -154,6 +159,7 @@ const YourEventPage = () => {
     if (filter === "approved") {
       if (event.subStatus === "completed") return "bg-gray-200 text-gray-700";
       if (event.subStatus === "cancelled") return "bg-red-100 text-red-700";
+      if (event.subStatus === "closed") return "bg-blue-100 text-blue-700";
       return "bg-green-100 text-green-700"; // opened
     }
 
@@ -269,7 +275,7 @@ const YourEventPage = () => {
 
                     {menu === "created" &&
                       event.status === "approved" &&
-                      event.subStatus === "opened" && (
+                      ["opened", "closed"].includes(event.subStatus) && (
                         <button
                           className="px-4 py-2 bg-green-700 text-white rounded-lg mt-3"
                           onClick={() => handleView(event.id, true)}
