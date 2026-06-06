@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import api from "../../api/api";
 
 import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 
 const YourEventPage = () => {
+  const location = useLocation();
+
   const navigate = useNavigate();
 
   const [menu, setMenu] = useState("joined"); // joined | created
   const [filter, setFilter] = useState("approved");
+  const [joinedEvents, setJoinedEvents] = useState([]);
 
   const [createdEvents, setCreatedEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,15 +25,41 @@ const YourEventPage = () => {
     });
 
   /* ================= DUMMY JOINED EVENTS ================= */
-  const joinedEvents = [
-    {
-      id: 1,
-      title: "The Legend of Blue Sea",
-      organizer: "Yayasan Laut Hijau",
-      location: "Yogyakarta, Indonesia",
-      date: "April 2025",
-    },
-  ];
+const fetchJoinedEvents = async (filterValue) => {
+  try {
+    setLoading(true);
+
+    // backend filter langsung
+    const res = await api.get("/user/events/joined", {
+      params: { status: filterValue },
+    });
+
+    let mapped =
+      res.data?.data?.map((e) => ({
+        id: e.event_id,
+        title: e.title,
+        organizer: e.host_name,
+        location: e.location,
+        date: formatDate(e.start_date),
+
+        status: e.status,
+        subStatus: e.sub_status,
+      })) || [];
+
+    setJoinedEvents(mapped);
+  } catch (err) {
+    console.error("Failed to fetch joined events:", err);
+    setJoinedEvents([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  useEffect(() => {
+    if (menu === "joined") {
+      fetchJoinedEvents(filter);
+    }
+  }, [menu, filter]);
 
   /* ================= FETCH CREATED EVENTS ================= */
   const fetchCreatedEvents = async (filterValue) => {
@@ -55,7 +85,9 @@ const YourEventPage = () => {
 
       // ✅ FRONTEND FILTER MINIMAL (ANTI ERROR DATA)
       if (filterValue === "approved") {
-        mapped = mapped.filter((e) => e.subStatus === "opened");
+        mapped = mapped.filter(
+          (e) => e.subStatus === "opened" || e.subStatus === "closed",
+        );
       }
 
       if (filterValue === "pending") {
@@ -84,7 +116,7 @@ const YourEventPage = () => {
     if (menu === "created") {
       fetchCreatedEvents(filter);
     }
-  }, [menu, filter]);
+  }, [menu, filter, location.pathname]);
 
   /* ================= DISPLAYED EVENTS ================= */
   const displayedEvents = menu === "joined" ? joinedEvents : createdEvents;
@@ -105,6 +137,7 @@ const YourEventPage = () => {
     if (filter === "approved") {
       if (event.subStatus === "completed") return "bg-gray-200 text-gray-700";
       if (event.subStatus === "cancelled") return "bg-red-100 text-red-700";
+      if (event.subStatus === "closed") return "bg-blue-100 text-blue-700";
       return "bg-green-100 text-green-700"; // opened
     }
 
@@ -132,15 +165,20 @@ const YourEventPage = () => {
                 (i) => (
                   <li
                     key={i}
-                    className="cursor-pointer text-gray-600 hover:text-green-600"
                     onClick={() => {
                       setMenu("joined");
-                      setFilter("all");
+                      setFilter(i);
                     }}
+                    className={`cursor-pointer transition
+        ${
+          menu === "joined" && filter === i
+            ? "font-bold text-green-600"
+            : "text-gray-600 hover:text-green-600"
+        }`}
                   >
                     {i.charAt(0).toUpperCase() + i.slice(1)}
                   </li>
-                )
+                ),
               )}
             </ul>
 
@@ -194,14 +232,19 @@ const YourEventPage = () => {
                 >
                   {/* INFO */}
                   <div>
-                    <h3 className="font-bold text-lg">{event.organizer}</h3>
+                    <h3
+                      className="font-bold text-lg capitalize cursor-pointer hover:text-green-600 transition"
+                      onClick={() => navigate(`/event/${event.id}`)}
+                    >
+                      {event.title}
+                    </h3>
                     <p className="text-gray-600">{event.location}</p>
-                    <p className="text-gray-700 capitalize">{event.title}</p>
+                    <p className="text-gray-700">{event.organizer}</p>
 
                     {menu === "created" && (
                       <span
                         className={`inline-block mt-2 px-3 py-1 text-xs rounded-full ${getBadgeClass(
-                          event
+                          event,
                         )}`}
                       >
                         {getBadgeLabel(event)}
@@ -215,7 +258,7 @@ const YourEventPage = () => {
 
                     {menu === "created" &&
                       event.status === "approved" &&
-                      event.subStatus === "opened" && (
+                      ["opened", "closed"].includes(event.subStatus) && (
                         <button
                           className="px-4 py-2 bg-green-700 text-white rounded-lg mt-3"
                           onClick={() => handleView(event.id, true)}

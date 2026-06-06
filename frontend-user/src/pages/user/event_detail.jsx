@@ -20,6 +20,9 @@ const EventDetailPage = () => {
 
   const [joined, setJoined] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const isClosed =
+  event?.status === "closed" ||
+  event?.subStatus === "closed";
 
   // 🔴 REPORT STATE
   const [showReport, setShowReport] = useState(false);
@@ -54,6 +57,8 @@ const EventDetailPage = () => {
           title: res.title,
           organizer: res.host_name,
           location: res.location,
+          specificAddress: res.specific_address,
+          addressLink: res.address_link,
 
           dateRange: `${formatDate(res.start_date)} - ${formatDate(
             res.end_date
@@ -173,24 +178,51 @@ const EventDetailPage = () => {
                   {event.organizer}
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-green-700" />
-                    <span>{event.location}</span>
+                {/* ===== EVENT META (GRID 2x2) ===== */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5 mt-6 text-base text-gray-800">
+                  {/* Location */}
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-6 h-6 text-green-700 mt-0.5 shrink-0" />
+                    <div className="flex flex-col leading-snug">
+                      <span className="font-medium">{event.location}</span>
+
+                      {(event.specificAddress || event.addressLink) && (
+                        <span className="text-sm text-gray-600">
+                          {event.specificAddress}
+                          {event.addressLink && (
+                            <>
+                              {" • "}
+                              <a
+                                href={
+                                  event.addressLink.startsWith("http")
+                                    ? event.addressLink
+                                    : `https://${event.addressLink}`
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-green-700 underline font-medium hover:text-green-900"
+                              >
+                                View on Maps
+                              </a>
+                            </>
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-green-700" />
+                  <div className="flex items-center gap-3 font-medium">
+                    <Calendar className="w-6 h-6 text-green-700" />
                     <span>{event.dateRange}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-green-700" />
+                  <div className="flex items-center gap-3 font-medium">
+                    <Clock className="w-6 h-6 text-green-700" />
                     <span>{event.time}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-green-700" />
+                  <div className="flex items-center gap-3 font-medium">
+                    <Users className="w-6 h-6 text-green-700" />
                     <span>{event.ageGroup}</span>
                   </div>
                 </div>
@@ -231,13 +263,18 @@ const EventDetailPage = () => {
         </div>
 
         {/* JOIN */}
-        <div className="p-8 flex justify-end">
+        <div className="p-8 flex flex-col items-end gap-3">
+          {isClosed && (
+            <div className="text-sm text-red-600 font-medium">
+              This event is currently unavailable.
+            </div>
+          )}
           <button
             onClick={!joined ? handleJoinEvent : undefined}
-            disabled={joined}
+            disabled={joined || isClosed}
             className={`px-10 py-3 rounded-lg font-bold transition
               ${
-                joined
+                joined || isClosed
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-green-700 text-white hover:bg-green-800"
               }`}
@@ -248,6 +285,8 @@ const EventDetailPage = () => {
               ? "JOINED"
               : event.isApplicant
               ? "WAITING FOR APPROVAL"
+              : isClosed
+              ? "EVENT CLOSED"
               : "JOIN EVENT"}
           </button>
         </div>
@@ -300,6 +339,27 @@ const EventDetailPage = () => {
                     }`}
                 >
                   {reportLoading ? "Reporting..." : "Report"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* TERMS & CONDITIONS MODAL */}
+        {showTerms && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+              <h2 className="text-xl font-bold mb-4">Terms & Conditions</h2>
+
+              <p className="text-sm text-gray-700 whitespace-pre-line">
+                {event.termsAndConditions || "No terms provided."}
+              </p>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowTerms(false)}
+                  className="px-4 py-2 border rounded-lg"
+                >
+                  Close
                 </button>
               </div>
             </div>

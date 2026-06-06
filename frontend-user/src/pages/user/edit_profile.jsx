@@ -62,7 +62,13 @@ const EditProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await getProfileAPI();
+        const userId = localStorage.getItem("user_id"); // ✅ AMBIL ID
+
+        if (!userId) {
+          throw new Error("User not logged in");
+        }
+
+        const res = await getProfileAPI(userId); // ✅ KIRIM ID
 
         setFormData({
           username: res.username || "",
@@ -71,7 +77,7 @@ const EditProfile = () => {
           location: res.city || "",
           status: res.status || "",
           bio: res.bio || "",
-          skills: normalizeSkills(res.skills), // ⬅️ KUNCI UTAMA
+          skills: normalizeSkills(res.skills),
           avatar: res.image_url || avatarImg,
         });
       } catch (err) {
@@ -194,11 +200,11 @@ const EditProfile = () => {
           {/* FORM */}
           <div className="space-y-5">
             {[
-              ["Username", "username"],
-              ["Nama", "name"],
-              ["Umur", "age"],
-              ["Lokasi", "location"],
-              ["Status", "status"],
+              ["*Username", "username"],
+              ["*Nama", "name"],
+              ["*Umur", "age"],
+              ["*Lokasi", "location"],
+              ["*Status", "status"],
             ].map(([label, key]) => (
               <div key={key}>
                 <label className="font-semibold">{label}</label>
@@ -213,7 +219,7 @@ const EditProfile = () => {
             ))}
 
             <div>
-              <label className="font-semibold">Bio</label>
+              <label className="font-semibold">*Bio</label>
               <textarea
                 value={formData.bio}
                 onChange={(e) =>

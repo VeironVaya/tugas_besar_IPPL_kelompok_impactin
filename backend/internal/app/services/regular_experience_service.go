@@ -25,6 +25,13 @@ func (s *ExperienceService) CreateExperience(userID uint, dto request.Experience
 		return response.ExperienceResponseDto{}, errors.New("invalid date format")
 	}
 
+	today := time.Now().Truncate(24 * time.Hour)
+	experienceDate := date.Truncate(24 * time.Hour)
+
+	if experienceDate.After(today) {
+		return response.ExperienceResponseDto{}, errors.New("date cannot be in the future")
+	}
+
 	if strings.TrimSpace(dto.Title) == "" {
 		return response.ExperienceResponseDto{}, errors.New("title cannot be empty")
 	}
@@ -101,6 +108,14 @@ func (s *ExperienceService) UpdateExperience(userID, expID uint, dto request.Exp
 		if err != nil {
 			return response.ExperienceResponseDto{}, errors.New("invalid date format")
 		}
+
+		today := time.Now().Truncate(24 * time.Hour)
+		experienceDate := date.Truncate(24 * time.Hour)
+	
+		if experienceDate.After(today) {
+			return response.ExperienceResponseDto{}, errors.New("date cannot be in the future")
+		}
+		
 		exp.Date = date
 	} else {
 		return response.ExperienceResponseDto{}, errors.New("invalid date format")

@@ -10,6 +10,7 @@ import (
 	"backend/internal/config"
 
 	"log"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -47,6 +48,9 @@ func main() {
 	eventCtrl := controllers.NewEventController(eventSvc, profileSvc)
 	reportCtrl := controllers.NewReportController(reportSvc)
 	expCtrl := controllers.NewExperienceController(expSvc)
+
+	// === Auto Update Sub Status ===
+	StartEventSubStatusScheduler(eventSvc, 30*time.Second)
 
 	// Setup Gin router and routes
 	r := gin.Default()
@@ -95,4 +99,15 @@ func SeedAdmin(db *gorm.DB) {
 	}
 
 	log.Println("✅ Admin seeded successfully")
+}
+
+func StartEventSubStatusScheduler(updater services.EventService, interval time.Duration) {
+	ticker := time.NewTicker(interval) // interval aman
+	go func() {
+		for range ticker.C {
+			if err := updater.AutoUpdateEventSubStatus(); err != nil {
+				log.Println("AutoUpdateEventSubStatus error:", err)
+			}
+		}
+	}()
 }

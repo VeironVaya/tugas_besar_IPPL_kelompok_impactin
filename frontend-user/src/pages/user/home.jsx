@@ -5,7 +5,7 @@ import Footer from "../../components/footer.jsx";
 import EventCard from "../../components/event_card.jsx";
 import HERO_IMAGE from "../../assets/hero news.png";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-import { getAllEventsAPI, getEventsCarouselAPI } from "../../api/event";
+import { getAllEventsAPI, getEventsCarouselAPI, getEventsRecommendationAPI } from "../../api/event";
 
 import { Leaf, BookOpen, Users, HeartPulse } from "lucide-react";
 
@@ -69,76 +69,94 @@ const HomePage = () => {
   const [activeSlide, setActiveSlide] = useState(0);
 
   /* ================= FETCH EVENT LIST ================= */
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const res = await getAllEventsAPI();
+  /* ================= FETCH EVENT LIST ================= */
+useEffect(() => {
+  const fetchEvents = async () => {
+    try {
+      const res = await getAllEventsAPI();
 
-        const mapped = res.data.map((e) => ({
+      const mapped = res.data.map((e) => ({
+        id: e.event_id,
+        title: e.title,
+        date: new Date(e.start_date).toLocaleDateString("en-GB", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+        }),
+        location: e.location,
+        organizer: e.host_name,
+        imageUrl: e.cover_image,
+        category: e.category,
+      }));
+
+      setEvents(mapped);
+    } catch (err) {
+      console.error("Failed to fetch events:", err);
+    }
+  };
+
+  fetchEvents();
+}, []);
+/* ================= FETCH HERO CAROUSEL ================= */
+useEffect(() => {
+  const fetchCarousel = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      let res;
+      let mapped = [];
+
+      if (token) {
+        // USER LOGIN → recommendation
+        res = await getEventsRecommendationAPI();
+
+        const data = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.data)
+            ? res.data
+            : [];
+
+        mapped = data.map((e) => ({
           id: e.event_id,
           title: e.title,
-          date: new Date(e.start_date).toLocaleDateString("en-GB", {
-            month: "short",
-            day: "2-digit",
-            year: "numeric",
-          }),
-          location: e.location,
-          organizer: e.host_name,
-          imageUrl: e.cover_image,
           category: e.category,
+          imageUrl: e.cover_image,
         }));
-
-        setEvents(mapped);
-      } catch (err) {
-        console.error("Failed to fetch events:", err);
-      }
-    };
-
-    fetchEvents();
-  }, []);
-
-  /* ================= FETCH HERO CAROUSEL ================= */
-  useEffect(() => {
-    const fetchCarousel = async () => {
-      try {
-        console.log("👉 fetchCarousel CALLED");
-
-        const res = await getEventsCarouselAPI();
-        console.log("✅ RAW RESPONSE:", res);
+      } else {
+        // GUEST → carousel
+        res = await getEventsCarouselAPI();
 
         const raw = res?.data || {};
-        console.log("📦 RAW DATA:", raw);
 
-        const order = ["environment", "education", "community", "health"];
+        const order = [
+          "environment",
+          "education",
+          "community",
+          "health",
+        ];
 
-        const mapped = order
+        mapped = order
           .map((key) => raw[key])
-          .filter(
-            (e) =>
-              e &&
-              typeof e === "object" &&
-              e.event_id &&
-              e.title &&
-              e.cover_image
-          )
+          .filter(Boolean)
           .map((e) => ({
             id: e.event_id,
             title: e.title,
             category: e.category,
             imageUrl: e.cover_image,
           }));
-
-        console.log("🎯 MAPPED:", mapped);
-
-        setCarouselEvents(mapped);
-        setActiveSlide(0);
-      } catch (err) {
-        console.error("❌ Failed to fetch carousel:", err);
       }
-    };
 
-    fetchCarousel();
-  }, []);
+      console.log("CAROUSEL:", mapped);
+
+      setCarouselEvents(mapped);
+      setActiveSlide(0);
+    } catch (err) {
+      console.error("Failed to fetch carousel:", err);
+    }
+  };
+
+  fetchCarousel();
+}, []);
 
   /* ================= AUTO SLIDE ================= */
   useEffect(() => {
@@ -146,7 +164,7 @@ const HomePage = () => {
 
     const interval = setInterval(() => {
       setActiveSlide((prev) =>
-        prev === carouselEvents.length - 1 ? 0 : prev + 1
+        prev === carouselEvents.length - 1 ? 0 : prev + 1,
       );
     }, 5000);
 
@@ -157,14 +175,14 @@ const HomePage = () => {
   const nextSlide = () => {
     if (!carouselEvents.length) return;
     setActiveSlide((prev) =>
-      prev === carouselEvents.length - 1 ? 0 : prev + 1
+      prev === carouselEvents.length - 1 ? 0 : prev + 1,
     );
   };
 
   const prevSlide = () => {
     if (!carouselEvents.length) return;
     setActiveSlide((prev) =>
-      prev === 0 ? carouselEvents.length - 1 : prev - 1
+      prev === 0 ? carouselEvents.length - 1 : prev - 1,
     );
   };
 
@@ -333,7 +351,7 @@ const HomePage = () => {
                   </div>
                 </div>
               );
-            }
+            },
           )}
         </section>
       </main>

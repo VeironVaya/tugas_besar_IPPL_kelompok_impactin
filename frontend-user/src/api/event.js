@@ -21,6 +21,11 @@ export const getEventsCarouselAPI = async () => {
   return res.data;
 };
 
+export const getEventsRecommendationAPI = async () => {
+  const res = await api.get("/user/events/recommendation");
+  return res.data;
+};
+
 export const getEventsAPI = async (params = {}) => {
   const res = await api.get("/user/events", {
     params,
@@ -40,4 +45,3 @@ export const joinEventAPI = async (eventId) => {
   const res = await api.post(`/user/events/join/${eventId}`);
   return res.data;
 };
-

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import api from "../../api/api";
+import { useParams, useNavigate } from "react-router-dom";
 
 const ManageEventPage = () => {
+  const navigate = useNavigate();
+
   const { id } = useParams();
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -236,7 +238,12 @@ const ManageEventPage = () => {
                   key={a.id}
                   className="border p-4 rounded-lg flex justify-between items-center bg-white"
                 >
-                  <p className="font-semibold">{a.name}</p>
+                  <p
+                    onClick={() => navigate(`/profile/${a.id}`)}
+                    className="font-semibold text-green-700 cursor-pointer hover:underline"
+                  >
+                    {a.name}
+                  </p>
 
                   <div className="flex gap-2">
                     <button
@@ -246,10 +253,7 @@ const ManageEventPage = () => {
                       Approve
                     </button>
                     <button
-                      onClick={() => {
-                        setSelectedUserId(a.id);
-                        setShowRejectModal(true);
-                      }}
+                      onClick={() => rejectApplicant(a.id)}
                       className="px-3 py-1 bg-red-600 text-white rounded-lg"
                     >
                       Reject
@@ -274,7 +278,12 @@ const ManageEventPage = () => {
                   key={p.id}
                   className="border p-4 rounded-lg bg-green-50 flex justify-between items-center"
                 >
-                  <p className="font-semibold">{p.name}</p>
+                  <p
+                    onClick={() => navigate(`/profile/${p.id}`)}
+                    className="font-semibold text-green-700 cursor-pointer hover:underline"
+                  >
+                    {p.name}
+                  </p>
 
                   <button
                     onClick={() => removeParticipant(p.id)}

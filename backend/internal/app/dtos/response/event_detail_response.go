@@ -5,6 +5,8 @@ type EventDetailResponseDto struct {
 	EventID 	uint 	`json:"event_id"`
 	Title 		string 	`json:"title"`
 	Location 	string 	`json:"location"`
+	SpecificAddress string  `json:"specific_address"`
+	AddressLink     string  `json:"address_link"`
 	StartDate 	string 	`json:"start_date"`
 	EndDate 	string 	`json:"end_date"`
 	StartTime 	string 	`json:"start_time"`
