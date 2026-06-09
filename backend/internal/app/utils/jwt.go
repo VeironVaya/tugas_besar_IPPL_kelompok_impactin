@@ -30,6 +30,21 @@ func GenerateJWT(userID uint) (string, error) {
     return token.SignedString([]byte(secret))
 }
 
+func GenerateAdminJWT(adminID uint) (string, error) {
+    secret := os.Getenv("JWT_SECRET")
+    if secret == "" {
+        secret = "defaultsecret"
+    }
+
+    claims := jwt.MapClaims{
+        "admin_id": adminID,
+        "exp": time.Now().Add(time.Hour * 24).Unix(),
+    }
+
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    return token.SignedString([]byte(secret))
+}
+
 func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {

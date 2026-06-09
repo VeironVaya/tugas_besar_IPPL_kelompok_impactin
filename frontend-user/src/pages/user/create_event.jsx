@@ -1,6 +1,9 @@
 import { useState } from "react";
 import Header from "../../components/navbar";
 import Footer from "../../components/footer.jsx";
+import { createEventAPI } from "../../api/event";
+import { useNavigate } from "react-router-dom";
+import { uploadImageToCloudinary } from "../../api/cloudinary";
 
 export default function CreateEvent() {
   const [formData, setFormData] = useState({
@@ -32,18 +35,102 @@ export default function CreateEvent() {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Event form data:", formData);
+  const navigate = useNavigate();
 
-    alert("Event created successfully!");
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // ================= VALIDATION LOG =================
+    const newErrors = {};
+
+    if (!formData.title) newErrors.title = "Title is required";
+    if (!formData.category) newErrors.category = "Category is required";
+    if (!formData.location) newErrors.location = "Location is required";
+    if (!formData.address) newErrors.address = "Address is required";
+    if (!formData.addressLink)
+      newErrors.addressLink = "Address link is required";
+    if (!formData.startDate) newErrors.startDate = "Start date is required";
+    if (!formData.endDate) newErrors.endDate = "End date is required";
+    if (!formData.startTime) newErrors.startTime = "Start time is required";
+    if (!formData.endTime) newErrors.endTime = "End time is required";
+    if (!formData.maxParticipant || formData.maxParticipant < 1)
+      newErrors.maxParticipant = "Max participant must be at least 1";
+    if (!formData.coverImage) newErrors.coverImage = "Cover image is required";
+    if (!formData.description)
+      newErrors.description = "Description is required";
+    if (!formData.minAge) newErrors.minAge = "Minimum age is required";
+    if (!formData.maxAge) newErrors.maxAge = "Maximum age is required";
+    if (!formData.groupLink) newErrors.groupLink = "Group link is required";
+
+
+
+    // ⏰ VALIDASI JAM
+    if (formData.startTime && formData.endTime) {
+      const start = new Date(`1970-01-01T${formData.startTime}`);
+      const end = new Date(`1970-01-01T${formData.endTime}`);
+      const startDay = new Date(`1970-01-01T${formData.startDate}`);
+      const endDay = new Date(`1970-01-01T${formData.endDate}`);
+
+      if ((start >= end) && (startDay == endDay)) {
+        newErrors.time = "Start time must be earlier than end time";
+      }
+    }
+
+    // LOG ERROR KE CONSOLE
+    if (Object.keys(newErrors).length > 0) {
+      console.error("❌ FORM VALIDATION ERROR:", newErrors);
+      setErrors(newErrors);
+      alert("Form tidak valid. Cek console untuk detail error.");
+      return;
+    }
+    // ==================================================
+
+    try {
+      setIsSubmitting(true);
+      let imageUrl = "https://example.com/default.jpg";
+
+      if (formData.coverImage) {
+        imageUrl = await uploadImageToCloudinary(formData.coverImage);
+      }
+
+      const payload = {
+        title: formData.title,
+        category: formData.category,
+        location: formData.location,
+        specific_address: formData.address,
+        address_link: formData.addressLink,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        start_time: formData.startTime,
+        end_time: formData.endTime,
+        max_participant: Number(formData.maxParticipant),
+        cover_image: imageUrl, // 🔥 URL dari Cloudinary
+        description: formData.description,
+        terms: formData.terms,
+        min_age: Number(formData.minAge),
+        max_age: Number(formData.maxAge),
+        group_link: formData.groupLink,
+      };
+
+      await createEventAPI(payload);
+
+      alert("Event created successfully 🎉");
+      navigate("/your-event");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create event");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <>
       <Header />
       <div className="min-h-screen bg-gradient-to-b from-green-200 to-green-100 p-6">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* TITLE */}
           <h1 className="text-4xl font-bold text-green-800 mb-1">
             Create your ImpactIn Event
@@ -217,7 +304,8 @@ export default function CreateEvent() {
                     name="maxParticipant"
                     value={formData.maxParticipant}
                     onChange={handleChange}
-                    placeholder="Set participant limit"
+                    min={1}
+                    placeholder="Set Maximum Participant"
                     className="w-full p-3 border rounded-lg mt-1"
                     required
                   />
@@ -268,6 +356,7 @@ export default function CreateEvent() {
                     <input
                       type="number"
                       name="minAge"
+                      min={0}
                       value={formData.minAge}
                       onChange={handleChange}
                       className="w-full p-3 border rounded-lg mt-1"
@@ -280,6 +369,7 @@ export default function CreateEvent() {
                     <input
                       type="number"
                       name="maxAge"
+                      min={0}
                       value={formData.maxAge}
                       onChange={handleChange}
                       className="w-full p-3 border rounded-lg mt-1"
@@ -289,7 +379,7 @@ export default function CreateEvent() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Group Link*</label>
+                  <label className="text-sm font-medium">Group Link</label>
                   <input
                     type="text"
                     name="groupLink"
@@ -306,9 +396,14 @@ export default function CreateEvent() {
             {/* SUBMIT BUTTON */}
             <button
               type="submit"
-              className="w-full py-3 bg-green-800 text-white rounded-lg hover:bg-green-900"
+              disabled={isSubmitting}
+              className={`w-full py-3 text-white rounded-lg transition ${
+                isSubmitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-800 hover:bg-green-900"
+              }`}
             >
-              DONE
+              {isSubmitting ? "Creating Event..." : "DONE"}
             </button>
           </form>
         </div>

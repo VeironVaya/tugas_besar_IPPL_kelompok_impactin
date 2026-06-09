@@ -11,41 +11,45 @@ const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    login(username);
-    navigate("/home");
+
+    try {
+      await login({
+        username,
+        password,
+      });
+
+      navigate("/home");
+    } catch (err) {
+      alert(err.response?.data?.message || "Login gagal");
+    }
   };
 
   return (
     <div
       className="min-h-screen w-full bg-cover bg-center flex items-center justify-between px-16 relative"
-      style={{
-        backgroundImage: `url(${BGLOGIN})`,
-      }}
+      style={{ backgroundImage: `url(${BGLOGIN})` }}
     >
-      {/* Overlay */}
       <div className="absolute inset-0 bg-black/30"></div>
 
-      {/* Left Side Text */}
-      <div className="relative z-10 text-white font-extrabold text-[70px] leading-tight max-w-md opacity-50 space-y-4">
+      {/* Left Text */}
+      <div className="relative z-10 text-white font-extrabold text-[70px] leading-tight max-w-md opacity-50">
         <p>Enter Into</p>
         <p>The Nature</p>
         <p>World</p>
       </div>
 
-      {/* Right Form Box */}
+      {/* Form */}
       <div className="relative z-10 w-full max-w-lg bg-white/10 backdrop-blur-lg rounded-3xl p-10 shadow-2xl">
-        {/* Logo */}
         <div className="w-full flex justify-center mb-6">
           <img src={LOGO} alt="logo" className="w-40" />
         </div>
 
         <p className="text-gray-200 text-sm text-center mb-8">
-          Welcome Back! Drop your registered username here
+          Welcome Back! Please login to your account
         </p>
 
-        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center bg-white/20 rounded-full px-4 py-3">
             <User className="text-gray-200 w-5 h-5 mr-3" />
@@ -54,6 +58,7 @@ const LoginPage = () => {
               placeholder="Username"
               required
               className="bg-transparent w-full text-gray-100 focus:outline-none text-sm"
+              value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
           </div>
@@ -65,6 +70,7 @@ const LoginPage = () => {
               placeholder="Password"
               required
               className="bg-transparent w-full text-gray-100 focus:outline-none text-sm"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>

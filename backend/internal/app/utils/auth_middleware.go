@@ -69,3 +69,56 @@ func Auth() gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func AdminAuth() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
+		authHeader := ctx.GetHeader("Authorization")
+		if authHeader == "" {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization header"})
+			ctx.Abort()
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization format"})
+			ctx.Abort()
+			return
+		}
+
+		tokenString := parts[1]
+
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			secret = "defaultsecret"
+		}
+
+		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+			return []byte(secret), nil
+		})
+
+		if err != nil || !token.Valid {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			ctx.Abort()
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
+			ctx.Abort()
+			return
+		}
+
+		adminID, ok := claims["admin_id"].(float64)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid admin id claim"})
+			ctx.Abort()
+			return
+		}
+
+		ctx.Set("admin_id", uint(adminID))
+		ctx.Next()
+	}
+}

@@ -1,43 +1,143 @@
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Header from "../../components/navbar.jsx";
 import Footer from "../../components/footer.jsx";
 import MOCK_CARD_IMAGE from "../../assets/hero news.png";
-import React, { useState } from "react";
+import {
+  getEventDetailAPI,
+  reportEventAPI,
+  joinEventAPI,
+} from "../../api/event";
+
 import { MapPin, Calendar, Clock, Users, TriangleAlert } from "lucide-react";
 
-const dummyEventDetails = {
-  id: 1,
-  title: "DeepBlue Movement",
-  organizer: "Sea Care Indonesia",
-  location: "Yogyakarta, Indonesia",
-  dateRange: "18-23 September 2025",
-  time: "09.00-14.00 WIB",
-  ageGroup: "All Age",
-  imageUrl: MOCK_CARD_IMAGE,
-  description: `The DeepBlue Movement is a collective call to action aimed at maintaining the health and sustainability of Indonesia's marine ecosystems. This event invites all volunteers, divers, communities, and concerned individuals to get directly involved in conservation efforts across our coastal and aquatic areas.`,
-  termsAndConditions: `T & C applies. Read more here.`,
-};
-
 const EventDetailPage = () => {
-  const { slug } = useParams();
-  const [showTerms, setShowTerms] = useState(false);
-  const [showReport, setShowReport] = useState(false);
-  const [reportText, setReportText] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [showJoinConfirm, setShowJoinConfirm] = useState(false);
-  const [agreed, setAgreed] = useState(false);
-  const [joined, setJoined] = useState(false);
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-  const event = dummyEventDetails;
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const [joined, setJoined] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const isClosed =
+  event?.status === "closed" ||
+  event?.subStatus === "closed";
+
+  // 🔴 REPORT STATE
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+
+  /* ================= FORMAT AGE ================= */
+  const formatAgeRange = (minAge, maxAge) => {
+    if (minAge === 0 && maxAge === 0) return "All Age";
+    if (minAge === 0 && maxAge > 0) return `Below ${maxAge + 1} years`;
+    if (minAge > 0 && maxAge === 0) return `Above ${minAge - 1} years`;
+    if (minAge === maxAge) return `${minAge} years`;
+    return `${minAge} - ${maxAge} years`;
+  };
+
+  /* ================= FORMAT DATE ================= */
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+  /* ================= FETCH EVENT ================= */
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        const res = await getEventDetailAPI(id);
+
+        const mappedEvent = {
+          id: res.event_id,
+          title: res.title,
+          organizer: res.host_name,
+          location: res.location,
+          specificAddress: res.specific_address,
+          addressLink: res.address_link,
+
+          dateRange: `${formatDate(res.start_date)} - ${formatDate(
+            res.end_date
+          )}`,
+          time: `${res.start_time} - ${res.end_time}`,
+          ageGroup: formatAgeRange(res.min_age, res.max_age),
+
+          imageUrl: res.cover_image || MOCK_CARD_IMAGE,
+          description: res.description,
+          termsAndConditions: res.terms,
+
+          isHost: res.is_host,
+          isApplicant: res.is_applicant,
+          isParticipant: res.is_participant,
+
+          groupLink: res.group_link,
+
+          status: res.status,
+          subStatus: res.sub_status,
+        };
+
+        setEvent(mappedEvent);
+
+        setJoined(
+          mappedEvent.isHost ||
+            mappedEvent.isApplicant ||
+            mappedEvent.isParticipant
+        );
+      } catch (err) {
+        console.error("Fetch event detail failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvent();
+  }, [id]);
+
+  /* ================= JOIN EVENT (GET API) ================= */
+  const handleJoinEvent = async () => {
+    try {
+      await joinEventAPI(id);
+
+      setEvent((prev) => ({
+        ...prev,
+        isApplicant: true,
+        status: "pending",
+      }));
+
+      setJoined(true);
+    } catch (err) {
+      const message = err.response?.data?.message || "";
+
+      // 🚨 PROFILE BELUM LENGKAP
+      if (
+        err.response?.status === 400 &&
+        message.toLowerCase().includes("profile")
+      ) {
+        alert("Please complete your profile before joining this event.");
+        navigate("/profile");
+        return;
+      }
+
+      alert(message || "Failed to join event");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading event...
+      </div>
+    );
+  }
 
   if (!event) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="p-10 text-center text-xl bg-white rounded-lg shadow-md">
-          Event <span className="font-bold text-red-700">'{slug}'</span> tidak
-          ditemukan.
-        </div>
+      <div className="min-h-screen flex items-center justify-center text-xl">
+        Event not found
       </div>
     );
   }
@@ -46,254 +146,220 @@ const EventDetailPage = () => {
     <>
       <Header />
 
-      <main className="min-h-screen bg-gray-50 pb-20">
-        {/* Event Detail Container */}
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-            {/* TOP: Image + Info */}
+      <main className="min-h-screen bg-slate-50">
+        <div className="w-full px-6 py-10">
+          <div className="bg-white rounded-xl overflow-hidden border relative">
+            {/* 🔴 REPORT BUTTON */}
+            {!event.isHost && (
+              <button
+                onClick={() => setShowReport(true)}
+                className="absolute top-6 right-6 flex items-center gap-2
+                           text-sm text-red-600 font-semibold bg-red-50
+                           px-3 py-1 rounded-full hover:bg-red-100"
+              >
+                <TriangleAlert className="w-4 h-4" />
+                Report Event
+              </button>
+            )}
+
+            {/* TOP */}
             <div className="md:flex">
-              {/* Image */}
               <div className="md:w-1/2">
                 <img
-                  className="h-full w-full object-cover"
                   src={event.imageUrl}
                   alt={event.title}
+                  className="w-full h-[420px] object-cover"
                 />
               </div>
 
-              {/* Info */}
-              <div className="p-8 flex-1 relative">
-                {/* Report Badge */}
-                <span
-                  onClick={() => setShowReport(true)}
-                  className="absolute top-6 right-6 flex items-center gap-1 text-sm text-red-600 font-semibold bg-red-50 px-3 py-1 rounded-full cursor-pointer hover:bg-red-100 transition"
-                >
-                  <TriangleAlert className="w-4 h-4" /> Report Event
-                </span>
-
-                {/* Title */}
-                <h1 className="text-4xl font-extrabold text-gray-900 leading-tight">
-                  {event.title}
-                </h1>
-
-                {/* Organizer */}
-                <p className="text-lg text-gray-600 font-medium mt-2 mb-8">
+              <div className="p-8 flex-1">
+                <h1 className="text-4xl font-extrabold">{event.title}</h1>
+                <p className="text-lg text-gray-600 mt-2 mb-8">
                   {event.organizer}
                 </p>
 
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-gray-700 text-base">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-green-700" />
-                    <span>
-                      {event.location},{" "}
-                      <span className="font-semibold">
-                        {event.fullLocation}
-                      </span>
-                    </span>
+                {/* ===== EVENT META (GRID 2x2) ===== */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5 mt-6 text-base text-gray-800">
+                  {/* Location */}
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-6 h-6 text-green-700 mt-0.5 shrink-0" />
+                    <div className="flex flex-col leading-snug">
+                      <span className="font-medium">{event.location}</span>
+
+                      {(event.specificAddress || event.addressLink) && (
+                        <span className="text-sm text-gray-600">
+                          {event.specificAddress}
+                          {event.addressLink && (
+                            <>
+                              {" • "}
+                              <a
+                                href={
+                                  event.addressLink.startsWith("http")
+                                    ? event.addressLink
+                                    : `https://${event.addressLink}`
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-green-700 underline font-medium hover:text-green-900"
+                              >
+                                View on Maps
+                              </a>
+                            </>
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-green-700" />
+                  <div className="flex items-center gap-3 font-medium">
+                    <Calendar className="w-6 h-6 text-green-700" />
                     <span>{event.dateRange}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-green-700" />
+                  <div className="flex items-center gap-3 font-medium">
+                    <Clock className="w-6 h-6 text-green-700" />
                     <span>{event.time}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-green-700" />
-                    <span>
-                      Age:{" "}
-                      <span className="font-semibold">{event.ageGroup}</span>
-                    </span>
+                  <div className="flex items-center gap-3 font-medium">
+                    <Users className="w-6 h-6 text-green-700" />
+                    <span>{event.ageGroup}</span>
                   </div>
                 </div>
 
-                {/* Terms & Conditions Button */}
+                {event.isParticipant && event.groupLink && (
+                  <div className="mt-6">
+                    <label className="text-xs font-semibold text-gray-600">
+                      Group Link
+                    </label>
+                    <div className="border rounded-md px-3 py-2 bg-gray-100">
+                      <a
+                        href={event.groupLink}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="underline break-all text-sm text-green-700 hover:text-green-900"
+                      >
+                        {event.groupLink}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() => setShowTerms(true)}
-                  className="mt-8 inline-block px-4 py-2 text-sm font-semibold text-green-700 border border-green-300 rounded-lg hover:bg-green-50 transition"
+                  className="mt-8 px-4 py-2 border rounded-lg text-green-700"
                 >
                   Terms & Conditions
                 </button>
               </div>
             </div>
 
-            {/* Description Section */}
-            <div className="p-8 border-t border-gray-100">
-              <h2 className="text-2xl font-extrabold text-gray-900 mb-4">
-                Description
-              </h2>
-              <p className="text-gray-700 leading-relaxed">
-                {event.description}
-              </p>
-            </div>
-
-            {/* Join Event Button */}
-            <div className="p-8 border-t border-gray-100 flex justify-end">
-              <button
-                onClick={() => setShowJoinConfirm(true)}
-                disabled={joined}
-                className={`py-3 px-10 rounded-lg font-bold shadow-md transition duration-300
-    ${
-      joined
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-green-700 hover:bg-green-800 text-white"
-    }
-  `}
-              >
-                {joined ? "WAITING FOR APPROVAL" : "JOIN EVENT"}
-              </button>
+            {/* DESCRIPTION */}
+            <div className="p-8 border-t">
+              <h2 className="text-2xl font-bold mb-4">Description</h2>
+              <p>{event.description}</p>
             </div>
           </div>
         </div>
-        {/* TERMS MODAL */}
-        {showTerms && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl max-w-xl w-full shadow-xl">
-              <h2 className="text-2xl font-bold mb-4">Terms & Conditions</h2>
-              <p className="text-gray-700 whitespace-pre-line">
-                {event.termsAndConditions}
-              </p>
-              <button
-                onClick={() => setShowTerms(false)}
-                className="mt-6 px-6 py-2 rounded-lg bg-green-600 text-white font-semibold"
-              >
-                Close
-              </button>
+
+        {/* JOIN */}
+        <div className="p-8 flex flex-col items-end gap-3">
+          {isClosed && (
+            <div className="text-sm text-red-600 font-medium">
+              This event is currently unavailable.
             </div>
-          </div>
-        )}
+          )}
+          <button
+            onClick={!joined ? handleJoinEvent : undefined}
+            disabled={joined || isClosed}
+            className={`px-10 py-3 rounded-lg font-bold transition
+              ${
+                joined || isClosed
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-green-700 text-white hover:bg-green-800"
+              }`}
+          >
+            {event.isHost
+              ? "YOU ARE THE HOST"
+              : event.isParticipant
+              ? "JOINED"
+              : event.isApplicant
+              ? "WAITING FOR APPROVAL"
+              : isClosed
+              ? "EVENT CLOSED"
+              : "JOIN EVENT"}
+          </button>
+        </div>
+
+        {/* REPORT MODAL */}
         {showReport && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-3xl border-4 border-green-900 px-8 py-6 relative">
-              {/* Close Button */}
-              <button
-                onClick={() => setShowReport(false)}
-                className="absolute top-3 right-4 text-gray-500 hover:text-black text-2xl"
-              >
-                ×
-              </button>
+            <div className="bg-white p-6 rounded-xl w-full max-w-md">
+              <h2 className="text-xl font-bold text-red-600 mb-4">
+                Report Event
+              </h2>
 
-              <h2 className="text-3xl font-bold mb-3">Report Event</h2>
-              <p className="text-gray-700 mb-4">
-                Tell us your reason for reporting this event
-              </p>
-
-              {/* Textarea */}
               <textarea
-                value={reportText}
-                onChange={(e) => {
-                  setReportText(e.target.value);
-                  setErrorMsg(""); // clear error when typing
-                }}
-                placeholder="Eg: false information, wrong details, inappropriate content..."
-                className="w-full h-64 border border-gray-400 rounded-lg p-3 text-gray-800 focus:ring-2 focus:ring-green-700 outline-none"
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                placeholder="Explain why you are reporting this event..."
+                className="w-full border rounded-lg p-3 h-32 resize-none"
               />
 
-              {/* Error message RIGHT under textarea */}
-              {errorMsg && (
-                <p className="text-red-600 text-sm mt-2">{errorMsg}</p>
-              )}
-
-              {/* Submit Button */}
-              <div className="flex justify-end mt-5">
+              <div className="flex justify-end gap-3 mt-5">
                 <button
-                  onClick={() => {
-                    if (!reportText.trim()) {
-                      setErrorMsg("Please fill your report.");
-                      return;
-                    }
-
-                    setErrorMsg("");
-                    console.log("Report submitted:", reportText);
-
-                    setShowReport(false);
-                    setReportText("");
-                    setShowSuccess(true);
-
-                    // Auto hide notification
-                    setTimeout(() => setShowSuccess(false), 3000);
-                  }}
-                  className="bg-green-800 text-white px-8 py-2 rounded-lg font-semibold hover:bg-green-900 transition"
-                >
-                  Submit
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showSuccess && (
-          <div className="fixed top-5 left-1/2 -translate-x-1/2 bg-green-700 text-white px-6 py-3 rounded-xl shadow-lg z-50">
-            Thank you for your reporting!
-          </div>
-        )}
-
-        {/* JOIN CONFIRMATION MODAL */}
-        {showJoinConfirm && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-xl px-8 py-6 relative">
-              {/* Close */}
-              <button
-                onClick={() => {
-                  setShowJoinConfirm(false);
-                  setAgreed(false);
-                }}
-                className="absolute top-3 right-4 text-gray-500 hover:text-black text-2xl"
-              >
-                ×
-              </button>
-
-              <h2 className="text-2xl font-bold mb-3">Before You Join</h2>
-              <p className="text-gray-700 mb-4">
-                Please read the recruitment details and terms & conditions
-                before joining this event.
-              </p>
-
-              {/* Checkbox */}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={() => setAgreed(!agreed)}
-                  className="w-4 h-4"
-                />
-                <span className="text-gray-800 text-sm">
-                  I have read and agree to all event terms & conditions.
-                </span>
-              </label>
-
-              {/* Buttons */}
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowJoinConfirm(false);
-                    setAgreed(false);
-                  }}
-                  className="px-6 py-2 rounded-lg border border-gray-400 text-gray-700 font-semibold hover:bg-gray-100"
+                  onClick={() => setShowReport(false)}
+                  className="px-4 py-2 border rounded-lg"
                 >
                   Cancel
                 </button>
 
                 <button
-                  disabled={!agreed}
-                  onClick={() => {
-                    setShowJoinConfirm(false);
-                    setJoined(true);
-                    setAgreed(false);
+                  disabled={reportLoading || !reportReason.trim()}
+                  onClick={async () => {
+                    try {
+                      setReportLoading(true);
+                      await reportEventAPI(event.id, reportReason);
+                      alert("Event reported successfully ✅");
+                      setShowReport(false);
+                      setReportReason("");
+                    } catch (err) {
+                      alert(
+                        err.response?.data?.message || "Failed to report event"
+                      );
+                    } finally {
+                      setReportLoading(false);
+                    }
                   }}
-                  className={`px-6 py-2 rounded-lg font-semibold text-white transition
-            ${
-              agreed
-                ? "bg-green-700 hover:bg-green-800"
-                : "bg-gray-400 cursor-not-allowed"
-            }
-          `}
+                  className={`px-4 py-2 rounded-lg text-white
+                    ${
+                      reportLoading || !reportReason.trim()
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-red-600 hover:bg-red-700"
+                    }`}
                 >
-                  OK
+                  {reportLoading ? "Reporting..." : "Report"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* TERMS & CONDITIONS MODAL */}
+        {showTerms && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+              <h2 className="text-xl font-bold mb-4">Terms & Conditions</h2>
+
+              <p className="text-sm text-gray-700 whitespace-pre-line">
+                {event.termsAndConditions || "No terms provided."}
+              </p>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowTerms(false)}
+                  className="px-4 py-2 border rounded-lg"
+                >
+                  Close
                 </button>
               </div>
             </div>

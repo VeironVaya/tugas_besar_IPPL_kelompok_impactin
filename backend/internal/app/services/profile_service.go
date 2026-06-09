@@ -5,25 +5,41 @@ import (
 	"backend/internal/app/dtos/response"
 	"backend/internal/app/models"
 	"backend/internal/app/repositories"
+	"errors"
+	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type ProfileService interface {
 	CreateProfile(userID uint, username string) error
-	GetProfile(userID uint) (response.EditProfileSkillResponseDto, error)
 	EditProfileAndSkills(userID uint, dto request.EditProfileSkillRequestDto) (response.EditProfileSkillResponseDto, error)
+	ChangePassword(userID uint, dto request.ChangePasswordRequestDto) (response.ChangePasswordResponseDto, error)
+	GetByUserID(userID uint) (*models.Profile, error)
+	GetProfileDetail(requestedUserID uint, viewerUserID uint) (response.ProfileDetailResponseDto, error)
 }
 
 type profileService struct {
 	profileRepo repositories.ProfileRepository
 	userRepo    *repositories.UserRepository
 	skillRepo 	repositories.SkillRepository
+	eventRepo   repositories.EventRepository
+	experienceRepo repositories.ExperienceRepository
 }
 
-func NewProfileService(pr repositories.ProfileRepository, ur *repositories.UserRepository, sr repositories.SkillRepository) ProfileService {
+func NewProfileService(
+	pr repositories.ProfileRepository,
+	ur *repositories.UserRepository,
+	sr repositories.SkillRepository,
+	evRepo repositories.EventRepository,
+	exRepo repositories.ExperienceRepository,
+	) ProfileService {
 	return &profileService{
 		profileRepo: pr,
 		userRepo:    ur,
 		skillRepo: sr,
+		eventRepo: evRepo,
+		experienceRepo: exRepo,
 	}
 }
 
@@ -35,43 +51,6 @@ func (s *profileService) CreateProfile(userID uint, username string) error {
 	return s.profileRepo.Create(&profile)
 }
 
-func (s *profileService) GetProfile(userID uint) (response.EditProfileSkillResponseDto, error) {
-
-	profile, err := s.profileRepo.GetByUserID(userID)
-	if err != nil {
-		return response.EditProfileSkillResponseDto{}, err
-	}
-
-	skills, err := s.skillRepo.GetByUserID(userID)
-	if err != nil {
-		return response.EditProfileSkillResponseDto{}, err
-	}
-
-	var skillDtos []response.SkillResponseDto
-	for _, sk := range skills {
-		skillDtos = append(skillDtos, response.SkillResponseDto{
-			ID:     sk.ID,
-			UserID: sk.UserID,
-			Skills: sk.Skills,
-		})
-	}
-
-	return response.EditProfileSkillResponseDto{
-		ProfileID: profile.ProfileID,
-		UserID:    profile.UserID,
-		Username:  profile.Username,
-		Name:      profile.Name,
-		Status:    profile.Status,
-		Age:       profile.Age,
-		City:      profile.City,
-		Bio:       profile.Bio,
-		ImageURL:  profile.Image,
-		Skills:    skillDtos,
-		Message:   "profile retrieved",
-	}, nil
-}
-
-
 func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfileSkillRequestDto) (response.EditProfileSkillResponseDto, error) {
 
 	// --- Ambil profil user ---
@@ -82,8 +61,39 @@ func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfi
 
 	// --- Update Username ---
 	if dto.Username != nil && *dto.Username != profile.Username {
+		if strings.TrimSpace(*dto.Username) == "" {
+			return response.EditProfileSkillResponseDto{}, errors.New("username cannot be empty")
+		}
+		
+		if s.userRepo.IsUsernameExistsExceptUser(*dto.Username, userID) {
+			return response.EditProfileSkillResponseDto{}, errors.New("username already exists")
+		}
+
+		if err := s.userRepo.UpdateUsername(userID, *dto.Username); err != nil {
+			return response.EditProfileSkillResponseDto{}, err
+		}
+
 		profile.Username = *dto.Username
-		s.userRepo.UpdateUsername(userID, *dto.Username) // update tabel user
+	}
+
+	if dto.Name != nil {
+		if strings.TrimSpace(*dto.Name) == "" {
+			return response.EditProfileSkillResponseDto{}, errors.New("name cannot be empty")
+		}
+	}
+
+	if profile.Name != nil && dto.Name == nil {
+		return response.EditProfileSkillResponseDto{}, errors.New("name cannot be empty")
+	}
+
+	if dto.Age != nil {
+		if *dto.Age <= 0 {
+			return response.EditProfileSkillResponseDto{}, errors.New("age must be greater than 0")
+		}
+	}
+
+	if profile.Age != nil && dto.Age == nil {
+		return response.EditProfileSkillResponseDto{}, errors.New("age cannot be empty")
 	}
 
 	// --- Update biodata (opsional & nullable) ---
@@ -135,5 +145,90 @@ func (s *profileService) EditProfileAndSkills(userID uint, dto request.EditProfi
 		ImageURL:  profile.Image,
 		Skills:    skillDtos,
 		Message:   "profile & skills updated",
+	}, nil
+}
+
+func (s *profileService) ChangePassword(userID uint, dto request.ChangePasswordRequestDto) (response.ChangePasswordResponseDto, error) {
+
+    user, err := s.userRepo.GetByID(userID)
+    if err != nil {
+        return response.ChangePasswordResponseDto{}, err
+    }
+	
+    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.OldPassword)); err != nil {
+        return response.ChangePasswordResponseDto{}, errors.New("wrong old password")
+    }
+	
+	if dto.OldPassword == dto.NewPassword {
+        return response.ChangePasswordResponseDto{}, errors.New("new password cannot be the same as old password")
+    }
+	
+    hashed, err := bcrypt.GenerateFromPassword([]byte(dto.NewPassword), bcrypt.DefaultCost)
+    if err != nil {
+        return response.ChangePasswordResponseDto{}, err
+    }
+
+    err = s.userRepo.UpdatePassword(userID, string(hashed))
+    if err != nil {
+        return response.ChangePasswordResponseDto{}, err
+    }
+
+    return response.ChangePasswordResponseDto{
+        Message: "password changed successfully",
+    }, nil
+}
+
+func (s *profileService) GetByUserID(userID uint) (*models.Profile, error) {
+	return s.profileRepo.GetByUserID(userID)
+}
+
+func (s *profileService) GetProfileDetail(requestedUserID uint, viewerUserID uint) (response.ProfileDetailResponseDto, error) {
+
+	profile, err := s.profileRepo.GetByUserID(requestedUserID)
+	if err != nil {
+		return response.ProfileDetailResponseDto{}, err
+	}
+
+	skills, _ := s.skillRepo.GetByUserID(requestedUserID)
+	experiences, _ := s.experienceRepo.GetByUserID(requestedUserID)
+	events, _ := s.eventRepo.GetCompletedEventsByParticipant(requestedUserID)
+
+	// map skills
+	var skillDtos []response.SkillResponseDto
+	for _, sk := range skills {
+		skillDtos = append(skillDtos, response.SkillResponseDto{
+			ID:     sk.ID,
+			UserID: sk.UserID,
+			Skills: sk.Skills,
+		})
+	}
+
+	// map experiences
+	var expDtos []response.ProfileExperienceDto
+	for _, ex := range experiences {
+		expDtos = append(expDtos, response.ProfileExperienceDto{
+			ExperienceID: ex.ID,
+			Title:        ex.Title,
+			Creator:      ex.HostName,
+			Date:         ex.Date,
+			Description:  ex.Description,
+			CoverImage:   ex.CoverImage,
+		})
+	}
+
+	return response.ProfileDetailResponseDto{
+		ProfileID:  profile.ProfileID,
+		Username:   profile.Username,
+		Name:       profile.Name,
+		Status:     profile.Status,
+		Age:        profile.Age,
+		City:       profile.City,
+		Bio:        profile.Bio,
+		ImageURL:   profile.Image,
+		Skills:     skillDtos,
+		Experiences: expDtos,
+		Events:     events,
+		IsYou:      requestedUserID == viewerUserID,
+		Message:    "profile retrieved",
 	}, nil
 }

@@ -25,12 +25,12 @@ func NewUserService(userRepo *repositories.UserRepository, profileRepo repositor
 
 func (s *UserService) Register(req request.RegisterRequestDto) (response.RegisterResponseDto, error) {
 	if s.UserRepo.IsEmailExists(req.Email) {
-		return response.RegisterResponseDto{}, errors.New("EMAIL_EXISTS")
+		return response.RegisterResponseDto{}, errors.New("email already exists")
 	}
 
 	// Cek username sudah ada?
 	if s.UserRepo.IsUsernameExists(req.Username) {
-		return response.RegisterResponseDto{}, errors.New("USERNAME_EXISTS")
+		return response.RegisterResponseDto{}, errors.New("username already exists")
 	}
 	
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

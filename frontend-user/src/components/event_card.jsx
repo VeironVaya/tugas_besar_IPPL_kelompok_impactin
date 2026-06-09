@@ -34,46 +34,67 @@ const EventCard = ({
   // Ganti <div> pembungkus utama dengan <Link>
   return (
     <Link
-      to={`/event/${id || slug}`} // Mengarahkan ke path dinamis
-      className="block bg-white rounded-xl overflow-hidden shadow-lg 
-                 hover:shadow-2xl hover:scale-[1.03] 
-                 transition duration-300 cursor-pointer"
+      to={`/event/${id}`}
+      className="group relative bg-white rounded-2xl overflow-hidden 
+             shadow-md hover:shadow-2xl transition-all duration-300"
     >
-      {/* Isi Card (sama seperti sebelumnya) */}
-      <div
-        className="h-32 w-full bg-cover bg-center relative"
-        style={{ backgroundImage: `url(${imageUrl})` }}
-      >
+      {/* Image */}
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full h-full object-cover 
+                 group-hover:scale-110 transition-transform duration-500"
+        />
+
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+
+        {/* Category */}
         <span
-          className={`absolute top-2 right-2 ${bg} text-white text-[11px] 
-                         px-3 py-1 rounded-full font-bold uppercase tracking-wider`}
+          className={`absolute top-3 left-3 ${bg} text-white text-xs px-3 py-1 rounded-full font-semibold`}
         >
           {category}
         </span>
       </div>
 
-      <div className="p-4">
-        <h3 className="font-extrabold text-base mb-2 text-gray-900">{title}</h3>
+      {/* Content */}
+      <div className="p-5 space-y-3">
+        <h3 className="font-bold text-lg text-gray-900 line-clamp-2">
+          {title}
+        </h3>
 
-        {/* Detail Lokasi & Tanggal */}
-        <div className="flex justify-between items-center text-xs border-t border-gray-100 pt-3">
-          <span className="flex items-center gap-1.5 text-gray-600 font-semibold">
-            <Calendar className="w-3.5 h-3.5 text-gray-500" />
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <span className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
             {date}
           </span>
-          <span className={`flex items-center gap-1 ${text} font-bold`}>
-            <MapPin className="w-3.5 h-3.5" />
+
+          <span className={`flex items-center gap-1 ${text} font-semibold`}>
+            <MapPin className="w-4 h-4" />
             {location.split(" ")[0]}
           </span>
         </div>
 
-        {/* Organizer */}
-        <div className="mt-2 text-xs text-gray-500 flex items-center gap-1.5">
-          <User className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <User className="w-4 h-4" />
           <span>{organizer}</span>
         </div>
       </div>
-    </Link> 
+
+      {/* Hover CTA */}
+      <div
+        className="absolute inset-0 flex items-end justify-center 
+                  bg-black/0 group-hover:bg-black/10 transition"
+      >
+        <span
+          className="mb-4 opacity-0 group-hover:opacity-100 
+                     text-white bg-black/70 px-4 py-1 rounded-full text-sm"
+        >
+          View Detail →
+        </span>
+      </div>
+    </Link>
   );
 };
 
