@@ -28,6 +28,9 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  flutter_map: ^8.1.1
+  latlong2: ^0.9.1
+  geolocator: ^11.1.0
   flutter:
     sdk: flutter
 
@@ -40,6 +43,9 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_svg: ^2.2.0
   get: ^4.7.3
+  firebase_core: ^4.10.0
+  firebase_messaging: ^16.3.0
+  flutter_local_notifications: ^19.5.0
 
 dev_dependencies:
   flutter_test:

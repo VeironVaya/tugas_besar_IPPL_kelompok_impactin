@@ -23,6 +23,10 @@ type EventService interface {
 	GetEventDetail(eventID uint, userID uint) (*response.EventDetailResponseDto, error)
 	GetCarouselEvents() (*response.EventCarouselResponseDto, error)
 	GetRecommendedEvents(userID uint) (*response.EventRecommendationResponseDto, error)
+	GetNearbyEvents(
+		latitude float64,
+		longitude float64,
+	) ([]response.NearbyEventResponseDto, error)
 	JoinEvent(userID, eventID uint) (response.JoinEventResponseDto, error)
 	AdminGetAllEvents(status, search string) ([]response.AdminEventsResponseDto, int64, error)
 	AdminGetEventDetail(eventID uint) (response.EventResponseDto, error)
@@ -37,19 +41,78 @@ type EventService interface {
 }
 
 type eventService struct {
-	eventRepo       repositories.EventRepository
-	profileRepo     repositories.ProfileRepository
-	applicantRepo   repositories.ApplicantRepository
-	participantRepo repositories.ParticipantRepository
+	eventRepo              repositories.EventRepository
+	profileRepo            repositories.ProfileRepository
+	applicantRepo          repositories.ApplicantRepository
+	participantRepo        repositories.ParticipantRepository
+	userRepo               *repositories.UserRepository
+	notificationService    *NotificationService
+	notificationHistorySvc *NotificationHistoryService
 }
 
+func (s *eventService) GetNearbyEvents(
+	latitude float64,
+	longitude float64,
+) ([]response.NearbyEventResponseDto, error) {
+
+	events, err := s.eventRepo.GetNearbyEvents()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []response.NearbyEventResponseDto
+
+	for _, event := range events {
+
+		if event.Latitude == nil || event.Longitude == nil {
+			continue
+		}
+
+		distance := utils.CalculateDistanceKM(
+			latitude,
+			longitude,
+			*event.Latitude,
+			*event.Longitude,
+		)
+
+		result = append(result, response.NearbyEventResponseDto{
+			EventID:    event.ID,
+			Title:      event.Title,
+			Category:   event.Category,
+			CoverImage: event.CoverImage,
+			StartDate:  event.StartDate.Format("2006-01-02"),
+			Location:   event.Location,
+			DistanceKM: distance,
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].DistanceKM < result[j].DistanceKM
+	})
+	if len(result) > 10 {
+		result = result[:10]
+	}
+	return result, nil
+}
 func NewEventService(
 	eventRepo repositories.EventRepository,
 	profileRepo repositories.ProfileRepository,
 	applicantRepo repositories.ApplicantRepository,
 	participantRepo repositories.ParticipantRepository,
+	userRepo *repositories.UserRepository,
+	notificationService *NotificationService,
+	notificationHistorySvc *NotificationHistoryService,
 ) EventService {
-	return &eventService{eventRepo, profileRepo, applicantRepo, participantRepo}
+
+	return &eventService{
+		eventRepo:              eventRepo,
+		profileRepo:            profileRepo,
+		applicantRepo:          applicantRepo,
+		participantRepo:        participantRepo,
+		userRepo:               userRepo,
+		notificationService:    notificationService,
+		notificationHistorySvc: notificationHistorySvc,
+	}
 }
 
 func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (response.EventResponseDto, error) {
@@ -134,6 +197,9 @@ func (s *eventService) CreateEvent(userID uint, dto request.EventRequestDto) (re
 		GroupLink:          dto.GroupLink,
 		Status:             "pending",
 		SubStatus:          nil,
+
+		Latitude:  dto.Latitude,
+		Longitude: dto.Longitude,
 	}
 
 	if err := s.eventRepo.Create(&event); err != nil {
@@ -541,6 +607,46 @@ func (s *eventService) AdminEventApproval(eventID uint, action string) (response
 
 	if err := s.eventRepo.UpdateApprovalStatus(event); err != nil {
 		return response.AdminEventApprovalResponseDto{}, err
+	}
+
+	title := ""
+	message := ""
+
+	if action == "accept" {
+		title = "Event Approved"
+		message = "Your event \"" + event.Title + "\" has been approved."
+	} else {
+		title = "Event Rejected"
+		message = "Your event \"" + event.Title + "\" has been rejected."
+	}
+
+	_ = s.notificationHistorySvc.CreateNotification(
+		event.UserID,
+		title,
+		message,
+	)
+
+	_ = s.userRepo.UpdateHasUnreadNotification(
+		event.UserID,
+		true,
+	)
+
+	tokens, err := s.userRepo.GetFCMTokensByUserID(
+		event.UserID,
+	)
+
+	if err == nil {
+
+		body := message
+
+		for _, token := range tokens {
+
+			_ = s.notificationService.SendToToken(
+				token,
+				title,
+				body,
+			)
+		}
 	}
 
 	return response.AdminEventApprovalResponseDto{
