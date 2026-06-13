@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mobile_user/app/routes/app_pages.dart';
 
 import '../controllers/manage_event_controller.dart';
 
@@ -8,6 +9,8 @@ class ManageEventView extends GetView<ManageEventController> {
 
   @override
   Widget build(BuildContext context) {
+    final width_size = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Obx(() {
@@ -76,12 +79,14 @@ class ManageEventView extends GetView<ManageEventController> {
                         child: Container(
                           width: 42,
                           height: 42,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.arrow_back,
+                            color: Colors.white,
+                            size: 22,
                           ),
                         ),
                       ),
@@ -110,20 +115,19 @@ class ManageEventView extends GetView<ManageEventController> {
                   child: Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(
-                          22,
+                        padding: EdgeInsets.all(
+                          width_size * 0.05,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               event.title,
-                              style: const TextStyle(
-                                fontSize: 32,
+                              style: TextStyle(
+                                fontSize: width_size * 0.08,
                                 fontWeight: FontWeight.bold,
-                                color: Color(
-                                  0xFF114B3A,
-                                ),
+                                color: const Color(0xFF114B3A),
+                                height: 1.2,
                               ),
                             ),
 
@@ -253,11 +257,12 @@ class ManageEventView extends GetView<ManageEventController> {
                                               : "Close Event",
                                       style: const TextStyle(
                                         color: Colors.white,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: ElevatedButton(
                                     onPressed: controller.cancelEvent,
@@ -275,6 +280,7 @@ class ManageEventView extends GetView<ManageEventController> {
                                       "Cancel Event",
                                       style: TextStyle(
                                         color: Colors.white,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
@@ -286,21 +292,46 @@ class ManageEventView extends GetView<ManageEventController> {
                       ),
 
                       // ==========================================
-                      // TABS
+                      // CUSTOM TABS (Gaya Filter SearchEvent)
                       // ==========================================
-                      const TabBar(
-                        labelColor: Color(0xFF114B3A),
-                        unselectedLabelColor: Colors.grey,
-                        indicatorColor: Color(0xFF114B3A),
-                        tabs: [
-                          Tab(
-                            text: "Applicant",
-                          ),
-                          Tab(
-                            text: "Participant",
-                          ),
-                        ],
+                      Builder(
+                        builder: (context) {
+                          final tabController =
+                              DefaultTabController.of(context);
+                          return AnimatedBuilder(
+                            animation: tabController,
+                            builder: (context, child) {
+                              return Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: width_size * 0.05),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildTabButton(
+                                        "Applicant",
+                                        Icons.person_outline,
+                                        0,
+                                        tabController,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildTabButton(
+                                        "Participant",
+                                        Icons.people_alt_outlined,
+                                        1,
+                                        tabController,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
+
+                      const SizedBox(height: 12),
 
                       Expanded(
                         child: TabBarView(
@@ -318,9 +349,7 @@ class ManageEventView extends GetView<ManageEventController> {
                                     ),
                                   )
                                 : ListView.builder(
-                                    padding: const EdgeInsets.all(
-                                      16,
-                                    ),
+                                    padding: EdgeInsets.all(width_size * 0.04),
                                     itemCount: event.applicants.length,
                                     itemBuilder: (
                                       context,
@@ -329,56 +358,54 @@ class ManageEventView extends GetView<ManageEventController> {
                                       final user = event.applicants[index];
 
                                       return Container(
-                                        margin: const EdgeInsets.only(
-                                          bottom: 12,
-                                        ),
-                                        padding: const EdgeInsets.all(
-                                          14,
-                                        ),
+                                        margin:
+                                            const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.all(14),
                                         decoration: BoxDecoration(
-                                          color: const Color(
-                                            0xFFD7ECE4,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                          color: const Color(0xFFD7ECE4),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                         ),
                                         child: Column(
                                           children: [
                                             Row(
                                               children: [
-                                                const CircleAvatar(
-                                                  backgroundColor: Color(
-                                                    0xFF114B3A,
-                                                  ),
+                                                CircleAvatar(
+                                                  radius: width_size * 0.05,
+                                                  backgroundColor:
+                                                      const Color(0xFF114B3A),
+                                                  child: const Icon(
+                                                      Icons.person,
+                                                      color: Colors.white,
+                                                      size: 20),
                                                 ),
-                                                const SizedBox(
-                                                  width: 12,
-                                                ),
+                                                const SizedBox(width: 12),
                                                 Expanded(
                                                   child: Text(
                                                     user.name,
                                                     maxLines: 1,
                                                     overflow:
                                                         TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          width_size * 0.038,
                                                       fontWeight:
-                                                          FontWeight.w500,
+                                                          FontWeight.w600,
                                                     ),
                                                   ),
                                                 ),
                                                 TextButton(
-                                                  onPressed: () {},
-                                                  child: const Text(
-                                                    "details",
-                                                  ),
+                                                  onPressed: () {
+                                                    Get.toNamed(
+                                                      Routes.PROFILE,
+                                                      arguments: user.userId,
+                                                    );
+                                                  },
+                                                  child: const Text("details"),
                                                 ),
                                               ],
                                             ),
-                                            const SizedBox(
-                                              height: 8,
-                                            ),
+                                            const SizedBox(height: 12),
                                             Row(
                                               children: [
                                                 Expanded(
@@ -386,44 +413,48 @@ class ManageEventView extends GetView<ManageEventController> {
                                                     onPressed: () {
                                                       controller
                                                           .approveApplicant(
-                                                        user.userId,
-                                                      );
+                                                              user.userId);
                                                     },
                                                     style: ElevatedButton
                                                         .styleFrom(
                                                       backgroundColor:
                                                           Colors.green,
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12)),
                                                     ),
-                                                    child: const Text(
-                                                      "Approve",
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
+                                                    child: const Text("Approve",
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white)),
                                                   ),
                                                 ),
-                                                const SizedBox(
-                                                  width: 8,
-                                                ),
+                                                const SizedBox(width: 8),
                                                 Expanded(
                                                   child: ElevatedButton(
                                                     onPressed: () {
                                                       controller
                                                           .rejectApplicant(
-                                                        user.userId,
-                                                      );
+                                                              user.userId);
                                                     },
                                                     style: ElevatedButton
                                                         .styleFrom(
                                                       backgroundColor:
                                                           Colors.red,
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12)),
                                                     ),
-                                                    child: const Text(
-                                                      "Reject",
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
+                                                    child: const Text("Reject",
+                                                        style: TextStyle(
+                                                            color:
+                                                                Colors.white)),
                                                   ),
                                                 ),
                                               ],
@@ -447,9 +478,7 @@ class ManageEventView extends GetView<ManageEventController> {
                                     ),
                                   )
                                 : ListView.builder(
-                                    padding: const EdgeInsets.all(
-                                      16,
-                                    ),
+                                    padding: EdgeInsets.all(width_size * 0.04),
                                     itemCount: event.participants.length,
                                     itemBuilder: (
                                       context,
@@ -458,38 +487,33 @@ class ManageEventView extends GetView<ManageEventController> {
                                       final user = event.participants[index];
 
                                       return Container(
-                                        margin: const EdgeInsets.only(
-                                          bottom: 12,
-                                        ),
-                                        padding: const EdgeInsets.all(
-                                          14,
-                                        ),
+                                        margin:
+                                            const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.all(14),
                                         decoration: BoxDecoration(
-                                          color: const Color(
-                                            0xFFD7ECE4,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                          color: const Color(0xFFD7ECE4),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                         ),
                                         child: Row(
                                           children: [
-                                            const CircleAvatar(
-                                              backgroundColor: Color(
-                                                0xFF114B3A,
-                                              ),
+                                            CircleAvatar(
+                                              radius: width_size * 0.05,
+                                              backgroundColor:
+                                                  const Color(0xFF114B3A),
+                                              child: const Icon(Icons.person,
+                                                  color: Colors.white,
+                                                  size: 20),
                                             ),
-                                            const SizedBox(
-                                              width: 12,
-                                            ),
+                                            const SizedBox(width: 12),
                                             Expanded(
                                               child: Text(
                                                 user.name,
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
+                                                style: TextStyle(
+                                                  fontSize: width_size * 0.038,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
                                             ),
@@ -503,25 +527,27 @@ class ManageEventView extends GetView<ManageEventController> {
                                                   textConfirm: "Yes",
                                                   confirmTextColor:
                                                       Colors.white,
+                                                  buttonColor: Colors.red,
+                                                  cancelTextColor:
+                                                      Colors.grey.shade700,
                                                   onConfirm: () {
                                                     Get.back();
-
                                                     controller
                                                         .removeParticipant(
-                                                      user.userId,
-                                                    );
+                                                            user.userId);
                                                   },
                                                 );
                                               },
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Colors.red,
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12)),
                                               ),
-                                              child: const Text(
-                                                "Remove",
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                ),
-                                              ),
+                                              child: const Text("Remove",
+                                                  style: TextStyle(
+                                                      color: Colors.white)),
                                             ),
                                           ],
                                         ),
@@ -541,38 +567,51 @@ class ManageEventView extends GetView<ManageEventController> {
       }),
     );
   }
-}
 
-Widget actionButton({
-  required String text,
-  required Color color,
-  required bool enabled,
-  required VoidCallback onPressed,
-}) {
-  return Expanded(
-    child: ElevatedButton(
-      onPressed: enabled ? onPressed : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: enabled ? color : Colors.grey.shade300,
-        disabledBackgroundColor: Colors.grey.shade300,
-        foregroundColor: enabled ? Colors.white : Colors.grey,
-        disabledForegroundColor: Colors.grey,
-        elevation: enabled ? 3 : 0,
-        shape: RoundedRectangleBorder(
+  // =====================================================
+  // FUNGSI UNTUK MERENDER TOMBOL TAB (STYLE SEARCH EVENT)
+  // =====================================================
+  Widget _buildTabButton(
+    String text,
+    IconData icon,
+    int index,
+    TabController tabController,
+  ) {
+    final isSelected = tabController.index == index;
+
+    return GestureDetector(
+      onTap: () => tabController.animateTo(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 56,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE7F3EF) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          side: enabled
-              ? BorderSide.none
-              : BorderSide(
-                  color: Colors.red.shade300,
-                  width: 1.5,
-                ),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF0B5D51) : Colors.grey.shade300,
+            width: 1.5,
+          ),
         ),
-        minimumSize: const Size(
-          0,
-          52,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color:
+                  isSelected ? const Color(0xFF0B5D51) : Colors.grey.shade700,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              text,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isSelected ? const Color(0xFF0B5D51) : Colors.black87,
+              ),
+            ),
+          ],
         ),
       ),
-      child: Text(text),
-    ),
-  );
+    );
+  }
 }
