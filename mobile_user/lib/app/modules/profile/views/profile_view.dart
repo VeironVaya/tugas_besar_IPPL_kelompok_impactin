@@ -1,15 +1,13 @@
-// =========================================================
-// PROFILE VIEW
-// SLICING STYLE RESPONSIVE UI
-// =========================================================
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:get_storage/get_storage.dart';
+import '../../../core/storage/storage_keys.dart';
 import '../../../widgets/custom_bottom_navbar.dart';
 import '../controllers/profile_controller.dart';
-
 import '../../../routes/app_pages.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import '../../../core/api/auth_api.dart';
+import 'dart:io';
 
 class ProfileView extends GetView<ProfileController> {
   const ProfileView({super.key});
@@ -20,351 +18,471 @@ class ProfileView extends GetView<ProfileController> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.only(
-            bottom: size.height * 0.14,
-          ),
-          child: Column(
-            children: [
-              // =================================================
-              // HEADER
-              // =================================================
-              Stack(
+        // Obx mendengarkan perubahan status loading & data di controller
+        child: Obx(() {
+          bool isLocal = controller.expImagePath.value.isNotEmpty;
+          bool isExisting = controller.existingImageUrl.value.isNotEmpty;
+          if (controller.isLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF114B3A),
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: controller.fetchProfileData,
+            color: const Color(0xFF114B3A),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics()),
+              padding: EdgeInsets.only(
+                bottom: size.height * 0.14,
+              ),
+              child: Column(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.only(
-                      left: size.width * 0.05,
-                      right: size.width * 0.05,
-                      top: size.height * 0.03,
-                      bottom: size.height * 0.03,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF114B3A),
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(32),
-                        bottomRight: Radius.circular(32),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          height: size.height * 0.02,
+                  // =================================================
+                  // HEADER
+                  // =================================================
+                  Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.only(
+                          left: size.width * 0.05,
+                          right: size.width * 0.05,
+                          top: size.height * 0.03,
+                          bottom: size.height * 0.03,
                         ),
-
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF114B3A),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(32),
+                            bottomRight: Radius.circular(32),
+                          ),
+                        ),
+                        child: Column(
                           children: [
-                            // =====================================
-                            // PROFILE IMAGE
-                            // =====================================
-                            CircleAvatar(
-                              radius: size.width * 0.11,
-                              backgroundImage: const AssetImage(
-                                "assets/images/pp_dum1.jpg",
-                              ),
-                            ),
-
-                            SizedBox(
-                              width: size.width * 0.04,
-                            ),
-
-                            // =====================================
-                            // INFO
-                            // =====================================
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    height: size.height * 0.01,
-                                  ),
-                                  Text(
-                                    "Veiron Vaya Yarief",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: size.width * 0.06,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: size.height * 0.012,
-                                  ),
-                                  _infoRow(
-                                    context,
-                                    Icons.work_outline,
-                                    "Mahasiswa",
-                                  ),
-                                  SizedBox(
-                                    height: size.height * 0.006,
-                                  ),
-                                  _infoRow(
-                                    context,
-                                    Icons.cake_outlined,
-                                    "21 Tahun",
-                                  ),
-                                  SizedBox(
-                                    height: size.height * 0.006,
-                                  ),
-                                  _infoRow(
-                                    context,
-                                    Icons.location_on_outlined,
-                                    "Bandung, Jawa Barat",
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(
-                          height: size.height * 0.025,
-                        ),
-
-                        // =========================================
-                        // EDIT PROFILE BUTTON
-                        // =========================================
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: size.width * 0.05,
-                              vertical: size.height * 0.012,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(
-                                30,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                            SizedBox(height: size.height * 0.02),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  "Edit profile",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: size.width * 0.036,
+                                // =====================================
+                                // PROFILE IMAGE
+                                // =====================================
+                                CircleAvatar(
+                                  radius: size.width * 0.11,
+                                  backgroundColor: Colors.grey.shade300,
+                                  backgroundImage: controller
+                                          .imageUrl.value.isNotEmpty
+                                      ? NetworkImage(controller.imageUrl.value)
+                                      : const AssetImage(
+                                              "assets/images/pp_dum1.jpg")
+                                          as ImageProvider,
+                                ),
+                                SizedBox(width: size.width * 0.04),
+
+                                // =====================================
+                                // INFO
+                                // =====================================
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: size.height * 0.01),
+                                      Text(
+                                        controller.name.value.isEmpty
+                                            ? "No Name"
+                                            : controller.name.value,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: size.width * 0.06,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      SizedBox(height: size.height * 0.012),
+                                      _infoRow(
+                                        context,
+                                        Icons.work_outline,
+                                        controller.status.value.isEmpty
+                                            ? "Status belum diisi"
+                                            : controller.status.value,
+                                      ),
+                                      SizedBox(height: size.height * 0.006),
+                                      _infoRow(
+                                        context,
+                                        Icons.cake_outlined,
+                                        "${controller.age.value} Tahun",
+                                      ),
+                                      SizedBox(height: size.height * 0.006),
+                                      _infoRow(
+                                        context,
+                                        Icons.location_on_outlined,
+                                        controller.city.value.isEmpty
+                                            ? "Lokasi belum diatur"
+                                            : controller.city.value,
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                SizedBox(
-                                  width: size.width * 0.03,
-                                ),
-                                Icon(
-                                  Icons.edit_outlined,
-                                  color: Colors.white,
-                                  size: size.width * 0.05,
                                 ),
                               ],
                             ),
+
+                            SizedBox(height: size.height * 0.025),
+
+                            // =========================================
+                            // EDIT PROFILE BUTTON
+                            // =========================================
+                            Obx(() => controller.isYou.value
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      // Tombol Change Password
+                                      GestureDetector(
+                                        onTap: () =>
+                                            _showChangePasswordDialog(context),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: size.width * 0.04,
+                                              vertical: size.height * 0.012),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.withOpacity(0.8),
+                                            borderRadius:
+                                                BorderRadius.circular(30),
+                                          ),
+                                          child: Text("Change Password",
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize:
+                                                      size.width * 0.032)),
+                                        ),
+                                      ),
+                                      SizedBox(width: size.width * 0.03),
+                                      // Tombol Edit Profile
+                                      GestureDetector(
+                                        onTap: () async {
+                                          await Get.toNamed(
+                                              Routes.EDIT_PROFILE);
+                                          controller.fetchProfileData();
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: size.width * 0.05,
+                                              vertical: size.height * 0.012),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.white.withOpacity(0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(30),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Text("Edit profile",
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize:
+                                                          size.width * 0.036)),
+                                              SizedBox(
+                                                  width: size.width * 0.03),
+                                              Icon(Icons.edit_outlined,
+                                                  color: Colors.white,
+                                                  size: size.width * 0.05),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : const SizedBox.shrink()),
+                          ],
+                        ),
+                      ),
+
+                      // =============================================
+                      // GREEN WAVES
+                      // =============================================
+                      Positioned(
+                        top: -40,
+                        left: -20,
+                        child: Container(
+                          width: size.width * 0.9,
+                          height: size.height * 0.16,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-
-                  // =============================================
-                  // GREEN WAVES
-                  // =============================================
-                  Positioned(
-                    top: -40,
-                    left: -20,
-                    child: Container(
-                      width: size.width * 0.9,
-                      height: size.height * 0.16,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(
-                          0.05,
-                        ),
-                        borderRadius: BorderRadius.circular(100),
                       ),
-                    ),
-                  ),
-
-                  Positioned(
-                    top: -20,
-                    right: -40,
-                    child: Container(
-                      width: size.width * 0.8,
-                      height: size.height * 0.13,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(
-                          0.04,
-                        ),
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: size.height * 0.018),
-
-              // =================================================
-              // DESCRIPTION
-              // =================================================
-              _sectionCard(
-                context,
-                title: "Description",
-                child: Text(
-                  "Aktif dalam kegiatan alam, volunteer dan peduli terhadap keberlanjutan ekosistem. Passionate about technology and environmental conservation.",
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: size.width * 0.034,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-
-              // =================================================
-              // SKILLS
-              // =================================================
-              _sectionCard(
-                context,
-                title: "Skills",
-                trailing: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: size.width * 0.04,
-                    vertical: size.height * 0.008,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF114B3A),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: size.width * 0.04,
-                      ),
-                      SizedBox(
-                        width: size.width * 0.01,
-                      ),
-                      Text(
-                        "Add Skills",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: size.width * 0.03,
+                      Positioned(
+                        top: -20,
+                        right: -40,
+                        child: Container(
+                          width: size.width * 0.8,
+                          height: size.height * 0.13,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.04),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _skillChip(
-                      "Public Speaking",
-                      Colors.pink.shade50,
-                      Colors.pink,
-                    ),
-                    _skillChip(
-                      "Environmental Conservation",
-                      Colors.green.shade50,
-                      Colors.green.shade800,
-                    ),
-                    _skillChip(
-                      "Sustainability Practices",
-                      Colors.indigo.shade50,
-                      Colors.indigo,
-                    ),
-                    _skillChip(
-                      "Event Planning",
-                      Colors.red.shade50,
-                      Colors.red,
-                    ),
-                    _skillChip(
-                      "Community Leadership",
-                      Colors.blue.shade50,
-                      Colors.blue,
-                    ),
-                    _skillChip(
-                      "Volunteer Management",
-                      Colors.orange.shade50,
-                      Colors.orange,
-                    ),
-                  ],
-                ),
-              ),
 
-              // =================================================
-              // EXPERIENCE
-              // =================================================
-              _sectionCard(
-                context,
-                title: "General Experience",
-                trailing: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: size.width * 0.04,
-                    vertical: size.height * 0.008,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF114B3A),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    "Add Experience",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: size.width * 0.03,
-                    ),
-                  ),
-                ),
-                child: _experienceCard(context),
-              ),
+                  SizedBox(height: size.height * 0.018),
 
-              // =================================================
-// LOGOUT BUTTON
-// =================================================
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: size.width * 0.025,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: size.height * 0.065,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade500,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                    onPressed: () {
-                      Get.offAllNamed(Routes.LOGIN);
-                    },
-                    icon: Icon(
-                      Icons.logout,
-                      color: Colors.white,
-                      size: size.width * 0.05,
-                    ),
-                    label: Text(
-                      "Logout",
+                  // =================================================
+                  // DESCRIPTION
+                  // =================================================
+                  _sectionCard(
+                    context,
+                    title: "Description",
+                    child: Text(
+                      controller.bio.value.isEmpty
+                          ? "Belum ada bio."
+                          : controller.bio.value,
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: size.width * 0.042,
-                        fontWeight: FontWeight.w700,
+                        color: Colors.grey.shade700,
+                        fontSize: size.width * 0.034,
+                        height: 1.5,
                       ),
                     ),
                   ),
-                ),
+
+                  // =================================================
+                  // SKILLS
+                  // =================================================
+                  _sectionCard(
+                    context,
+                    title: "Skills",
+                    child: controller.skills.isEmpty
+                        ? Text(
+                            "Belum ada skill yang ditambahkan",
+                            style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: size.width * 0.034),
+                          )
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: controller.skills.map((skillItem) {
+                              // Extract skill text based on your JSON format
+                              String skillText = "";
+                              if (skillItem is Map &&
+                                  skillItem['skills'] != null) {
+                                skillText = skillItem['skills'].toString();
+                              } else if (skillItem is String) {
+                                skillText = skillItem;
+                              }
+
+                              return _skillChip(
+                                skillText,
+                                Colors.green.shade50,
+                                Colors.green.shade800,
+                              );
+                            }).toList(),
+                          ),
+                  ),
+
+                  // =================================================
+                  // EXPERIENCE
+                  // =================================================
+                  _sectionCard(
+                    context,
+                    title: "General Experience",
+                    trailing: controller.isYou.value
+                        ? GestureDetector(
+                            onTap: () => _showExperienceDialog(context),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: size.width * 0.04,
+                                vertical: size.height * 0.008,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF114B3A),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                "Add Experience",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: size.width * 0.03,
+                                ),
+                              ),
+                            ),
+                          )
+                        : null,
+                    child: controller.experiences.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              "Belum ada pengalaman yang ditambahkan",
+                              style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: size.width * 0.034),
+                            ),
+                          )
+                        : Column(
+                            children: controller.experiences.map((exp) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16.0),
+                                child: _experienceCard(context, exp),
+                              );
+                            }).toList(),
+                          ),
+                  ),
+
+                  // =================================================
+                  // LOGOUT BUTTON
+                  // =================================================
+                  Obx(() => controller.isYou.value
+                      ? Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.025),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: size.height * 0.065,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade500,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                              onPressed: () {
+                                Get.dialog(
+                                  Dialog(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(16)),
+                                    backgroundColor: Colors.white,
+                                    insetPadding: const EdgeInsets.symmetric(
+                                        horizontal: 24),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red.shade50,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(Icons.logout,
+                                                color: Colors.red.shade400,
+                                                size: 40),
+                                          ),
+                                          const SizedBox(height: 24),
+                                          const Text(
+                                            "Logout?",
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFF114B3A),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            "Are you sure you want to log out of your account?",
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade600,
+                                              height: 1.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 32),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: OutlinedButton(
+                                                  style:
+                                                      OutlinedButton.styleFrom(
+                                                    side: BorderSide(
+                                                        color: Colors
+                                                            .grey.shade300),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        12)),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 14),
+                                                  ),
+                                                  onPressed: () => Get.back(),
+                                                  child: Text("Cancel",
+                                                      style: TextStyle(
+                                                          color: Colors
+                                                              .grey.shade700,
+                                                          fontWeight:
+                                                              FontWeight.w600)),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: ElevatedButton(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.red.shade500,
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        12)),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 14),
+                                                    elevation: 0,
+                                                  ),
+                                                  onPressed: () {
+                                                    Get.back();
+                                                    controller.logout();
+                                                  },
+                                                  child: const Text("Logout",
+                                                      style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.w600)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(
+                                Icons.logout,
+                                color: Colors.white,
+                                size: size.width * 0.05,
+                              ),
+                              label: Text(
+                                "Logout",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: size.width * 0.042,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink()),
+                  SizedBox(height: size.height * 0.03),
+                ],
               ),
-
-              SizedBox(height: size.height * 0.03),
-            ],
-          ),
-        ),
+            ),
+          );
+        }),
       ),
-
-      // =====================================================
-      // BOTTOM NAVBAR
-      // =====================================================
       bottomNavigationBar: const CustomBottomNavbar(
         currentIndex: 3,
       ),
@@ -374,36 +492,19 @@ class ProfileView extends GetView<ProfileController> {
   // =========================================================
   // INFO ROW
   // =========================================================
-
-  Widget _infoRow(
-    BuildContext context,
-    IconData icon,
-    String text,
-  ) {
+  Widget _infoRow(BuildContext context, IconData icon, String text) {
     final size = MediaQuery.of(context).size;
-
     return Row(
       children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: size.width * 0.04,
-        ),
+        Icon(icon, color: Colors.white, size: size.width * 0.04),
         SizedBox(width: size.width * 0.02),
         Text(
           text,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size.width * 0.036,
-          ),
+          style: TextStyle(color: Colors.white, fontSize: size.width * 0.036),
         ),
       ],
     );
   }
-
-  // =========================================================
-  // SECTION CARD
-  // =========================================================
 
   Widget _sectionCard(
     BuildContext context, {
@@ -423,9 +524,7 @@ class ProfileView extends GetView<ProfileController> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.green.shade100,
-        ),
+        border: Border.all(color: Colors.green.shade100),
         boxShadow: [
           BoxShadow(
             blurRadius: 8,
@@ -439,11 +538,8 @@ class ProfileView extends GetView<ProfileController> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.auto_awesome,
-                color: const Color(0xFF114B3A),
-                size: size.width * 0.05,
-              ),
+              Icon(Icons.auto_awesome,
+                  color: const Color(0xFF114B3A), size: size.width * 0.05),
               SizedBox(width: size.width * 0.02),
               Expanded(
                 child: Text(
@@ -468,44 +564,41 @@ class ProfileView extends GetView<ProfileController> {
   // =========================================================
   // SKILL CHIP
   // =========================================================
-
-  Widget _skillChip(
-    String text,
-    Color bg,
-    Color textColor,
-  ) {
+  Widget _skillChip(String text, Color bg, Color textColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
       child: Text(
         text,
         style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
+            color: textColor, fontWeight: FontWeight.w600, fontSize: 12),
       ),
     );
   }
 
   // =========================================================
-  // EXPERIENCE CARD
+  // EXPERIENCE CARD (DYNAMIC)
   // =========================================================
-
-  Widget _experienceCard(BuildContext context) {
+  Widget _experienceCard(BuildContext context, dynamic exp) {
     final size = MediaQuery.of(context).size;
+
+    // Parse fields safely from API JSON
+    int expId = exp['experience_id'] ?? 0;
+    String title = exp['title']?.toString() ?? "No Title";
+    String creator = exp['creator']?.toString() ?? "Unknown";
+    String description = exp['description']?.toString() ?? "";
+    String dateStr = exp['date']?.toString() ?? "";
+    String coverUrl = exp['cover_image']?.toString() ?? "";
+
+    // Simple date parse to look cleaner
+    if (dateStr.length >= 10) {
+      dateStr = dateStr.substring(0, 10);
+    }
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.green.shade100,
-        ),
+        border: Border.all(color: Colors.green.shade100),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -516,12 +609,16 @@ class ProfileView extends GetView<ProfileController> {
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),
             ),
-            child: Image.asset(
-              "assets/images/ev_dum1.jpg",
-              height: size.height * 0.18,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            child: coverUrl.isNotEmpty
+                ? Image.network(
+                    coverUrl,
+                    height: size.height * 0.18,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        _fallbackExperienceImage(size),
+                  )
+                : _fallbackExperienceImage(size),
           ),
           Padding(
             padding: EdgeInsets.all(size.width * 0.04),
@@ -529,7 +626,7 @@ class ProfileView extends GetView<ProfileController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Environmental Volunteer",
+                  title,
                   style: TextStyle(
                     fontSize: size.width * 0.055,
                     fontWeight: FontWeight.w700,
@@ -538,97 +635,435 @@ class ProfileView extends GetView<ProfileController> {
                 ),
                 SizedBox(height: size.height * 0.005),
                 Text(
-                  "Green Earth Organization",
+                  creator,
                   style: TextStyle(
-                    color: Colors.green,
-                    fontSize: size.width * 0.034,
-                  ),
+                      color: Colors.green, fontSize: size.width * 0.034),
                 ),
                 SizedBox(height: size.height * 0.01),
                 Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      size: size.width * 0.035,
-                      color: Colors.grey,
-                    ),
+                    Icon(Icons.calendar_today_outlined,
+                        size: size.width * 0.035, color: Colors.grey),
                     SizedBox(width: size.width * 0.02),
                     Text(
-                      "28 January 2025",
+                      dateStr,
                       style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: size.width * 0.033,
-                      ),
+                          color: Colors.grey, fontSize: size.width * 0.033),
                     ),
                   ],
                 ),
                 SizedBox(height: size.height * 0.015),
                 Text(
-                  "Leading environmental conservation initiatives and organizing community cleanup events across Bandung area.",
+                  description,
                   style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: size.width * 0.034,
-                    height: 1.5,
+                      color: Colors.grey.shade700,
+                      fontSize: size.width * 0.034,
+                      height: 1.5),
+                ),
+                if (controller.isYou.value) ...[
+                  SizedBox(height: size.height * 0.02),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.red.shade200),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30)),
+                            padding: EdgeInsets.symmetric(
+                                vertical: size.height * 0.016),
+                          ),
+                          onPressed: () {
+                            _showDeleteDialog(context, expId);
+                          },
+                          child: const Text("Delete",
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ),
+                      SizedBox(width: size.width * 0.02),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.green.shade200),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30)),
+                            padding: EdgeInsets.symmetric(
+                                vertical: size.height * 0.016),
+                          ),
+                          onPressed: () {
+                            _showExperienceDialog(context, experience: exp);
+                          },
+                          child: const Text("Edit",
+                              style: TextStyle(color: Colors.green)),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(height: size.height * 0.02),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colors.red.shade200,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              30,
-                            ),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            vertical: size.height * 0.016,
-                          ),
-                        ),
-                        onPressed: () {},
-                        child: const Text(
-                          "Delete",
-                          style: TextStyle(
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: size.width * 0.04),
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colors.green.shade200,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              30,
-                            ),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            vertical: size.height * 0.016,
-                          ),
-                        ),
-                        onPressed: () {},
-                        child: const Text(
-                          "Edit",
-                          style: TextStyle(
-                            color: Colors.green,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
+                // Kode "SizedBox" dan "Text" deskripsi yang berada di sini sebelumnya telah dihapus.
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _fallbackExperienceImage(Size size) {
+    return Image.asset(
+      "assets/images/ev_dum1.jpg",
+      height: size.height * 0.18,
+      width: double.infinity,
+      fit: BoxFit.cover,
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Change Password",
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF114B3A))),
+                const SizedBox(height: 24),
+                _buildDialogTextField(
+                    hint: "Current Password",
+                    textController: controller.oldPassController),
+                _buildDialogTextField(
+                    hint: "New Password",
+                    textController: controller.newPassController),
+                _buildDialogTextField(
+                    hint: "Confirm New Password",
+                    textController: controller.confirmPassController),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF114B3A),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => controller.updatePassword(),
+                    child: const Text("Save Password",
+                        style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // =========================================================
+  // SHOW EXPERIENCE DIALOG (POP-UP ADD / EDIT)
+  // =========================================================
+  void _showExperienceDialog(BuildContext context,
+      {Map<String, dynamic>? experience}) {
+    final isEdit = experience != null;
+
+    // Inisialisasi formulir dengan data / kosongkan jika mode Add
+    controller.openExperienceForm(exp: experience);
+
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Dialog
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isEdit ? "Edit Experience" : "Add Experience",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF114B3A),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Get.back(),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey.shade400),
+                        ),
+                        child: Icon(Icons.close,
+                            size: 16, color: Colors.grey.shade600),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Form Fields
+                _buildDialogTextField(
+                  hint: isEdit
+                      ? "Experience Name"
+                      : "Add your experience name...",
+                  textController: controller.expTitleController,
+                ),
+                _buildDialogTextField(
+                  hint:
+                      isEdit ? "Host Name" : "Add your event category/host...",
+                  textController: controller.expHostController,
+                ),
+                _buildDialogTextField(
+                  hint: isEdit ? "Date" : "Select the date",
+                  textController: controller.expDateController,
+                  readOnly: true, // Tidak bisa diketik manual
+                  onTap: () => controller.selectExpDate(context),
+                  suffixIcon:
+                      Icon(Icons.calendar_month, color: Colors.grey.shade400),
+                ),
+
+                // Add Image Button (Placeholder)
+
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Obx(() {
+                    // Definisi reaktif di dalam Obx
+                    final String imagePath = controller.expImagePath.value;
+                    final String existingUrl =
+                        controller.existingImageUrl.value;
+
+                    // Logika tampil:
+                    // Jika ada file lokal (baru dipilih), pakai file
+                    // Jika tidak, cek apakah ada URL lama (edit mode), pakai network
+                    bool hasImage =
+                        imagePath.isNotEmpty || existingUrl.isNotEmpty;
+
+                    return GestureDetector(
+                      onTap: () => controller.pickExperienceImage(),
+                      child: Container(
+                        width: double.infinity,
+                        height: 180, // Beri tinggi tetap agar preview terlihat
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: hasImage
+                                ? Colors.green.shade600
+                                : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                        ),
+                        child: hasImage
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: imagePath.isNotEmpty
+                                    ? Image.file(File(imagePath),
+                                        fit: BoxFit.cover) // Preview file baru
+                                    : Image.network(existingUrl,
+                                        fit: BoxFit.cover), // Preview foto lama
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_photo_alternate,
+                                      size: 40, color: Colors.grey.shade400),
+                                  const SizedBox(height: 8),
+                                  Text("Add cover image",
+                                      style: TextStyle(
+                                          color: Colors.grey.shade600)),
+                                ],
+                              ),
+                      ),
+                    );
+                  }),
+                ),
+
+                // Description Field
+                _buildDialogTextField(
+                  hint: isEdit
+                      ? "Description"
+                      : "Add your event description here",
+                  textController: controller.expDescController,
+                  maxLines: 4,
+                ),
+
+                const SizedBox(height: 8),
+
+                // Save Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF114B3A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      int? expId = isEdit ? experience['experience_id'] : null;
+                      controller.saveExperience(id: expId);
+                    },
+                    child: Text(
+                      isEdit ? "Save Changes" : "Save",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+// =========================================================
+  // SHOW DELETE CONFIRMATION DIALOG
+  // =========================================================
+  void _showDeleteDialog(BuildContext context, int expId) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Ikon Peringatan
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.warning_amber_rounded,
+                    color: Colors.red.shade400, size: 40),
+              ),
+              const SizedBox(height: 24),
+
+              // Judul & Deskripsi
+              const Text(
+                "Delete Experience?",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF114B3A),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Are you sure you want to delete this experience? This action cannot be undone.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Tombol Action
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => Get.back(), // Tutup dialog
+                      child: Text("Cancel",
+                          style: TextStyle(
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade500,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Get.back(); // Tutup dialog dulu
+                        // Panggil fungsi hapus dari controller
+                        controller.deleteExperience(expId);
+                      },
+                      child: const Text("Delete",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper Custom TextField untuk Dialog UI
+  Widget _buildDialogTextField({
+    required String hint,
+    required TextEditingController textController,
+    int maxLines = 1,
+    Widget? suffixIcon,
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: TextField(
+        controller: textController,
+        maxLines: maxLines,
+        readOnly: readOnly,
+        onTap: onTap,
+        style: const TextStyle(fontSize: 14),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          suffixIcon: suffixIcon,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFF114B3A), width: 1.5),
+          ),
+        ),
       ),
     );
   }

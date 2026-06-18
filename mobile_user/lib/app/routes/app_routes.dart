@@ -11,6 +11,12 @@ abstract class Routes {
   static const PROFILE = _Paths.PROFILE;
   static const LOGIN = _Paths.LOGIN;
   static const REGISTER = _Paths.REGISTER;
+  static const TES = _Paths.TES;
+  static const SPLASH = _Paths.SPLASH;
+  static const CREATE_EVENT = _Paths.CREATE_EVENT;
+  static const MANAGE_EVENT = _Paths.MANAGE_EVENT;
+  static const EDIT_PROFILE = _Paths.EDIT_PROFILE;
+  static const NOTIFICATION = _Paths.NOTIFICATION;
 }
 
 abstract class _Paths {
@@ -23,4 +29,10 @@ abstract class _Paths {
   static const PROFILE = '/profile';
   static const LOGIN = '/login';
   static const REGISTER = '/register';
+  static const TES = '/tes';
+  static const EDIT_PROFILE = '/edit-profile';
+  static const SPLASH = '/splash';
+  static const CREATE_EVENT = '/create-event';
+  static const MANAGE_EVENT = '/manage-event';
+  static const NOTIFICATION = '/notification';
 }
